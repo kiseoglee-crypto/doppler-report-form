@@ -43,7 +43,7 @@ table.seg select{max-width:120px}
 .b-ok{background:#e7f6ec;color:var(--ok)}.b-bad{background:#fde8e7;color:var(--bad)}.b-mid{background:var(--warnbg);color:var(--warn)}
 .ev{display:inline-block;width:14px;height:14px;line-height:14px;text-align:center;border-radius:50%;background:#e3e8ef;color:#41536b;font-size:10px;cursor:help;margin-left:3px;font-weight:700;vertical-align:middle}
 .ev.out{background:#ffedd5;color:var(--out)}
-.btn2{border:1px solid var(--acc);background:var(--acc2);color:var(--acc);border-radius:5px;padding:3px 9px;cursor:pointer;font-size:12px}
+.btn2{white-space:nowrap;border:1px solid var(--acc);background:var(--acc2);color:var(--acc);border-radius:5px;padding:3px 9px;cursor:pointer;font-size:12px}
 .btn2:hover{background:var(--acc);color:#fff}
 .btn2.gray{border-color:var(--line);background:#fff;color:var(--ink)}
 .side{display:none}.side.show{display:block}
@@ -57,6 +57,8 @@ table.seg select{max-width:120px}
 .crit li{margin:2px 0}
 .crit .o{color:var(--out);font-weight:600}
 .hide{display:none!important}
+#driveStatus{margin-top:4px;font-size:12px}.dok{color:var(--ok);font-weight:600}.dbad{color:var(--bad);font-weight:600}
+#btnSave:disabled{opacity:.5;cursor:wait}
 #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#13294b;color:#fff;padding:8px 14px;border-radius:6px;display:none}
 </style>
 </head>
@@ -75,12 +77,20 @@ table.seg select{max-width:120px}
  <section id="inputs"></section>
  <aside class="rep">
   <div class="card">
-   <h2>Generated report (English, for EMR)<span class="act"><button class="btn2" id="btnCopy">Copy to clipboard</button></span></h2>
+   <h2>Generated report (English, for EMR)<span class="act"><button class="btn2" id="btnCopy">Copy to clipboard</button><button class="btn2" id="btnSave" title="Save this exam (pseudonymized) to your Google Sheet">Save to Drive</button></span></h2>
    <div id="warnings" class="warn"></div>
    <div id="manualNote" class="warn hide">Report text was edited manually; auto-update paused. <button class="btn2 gray" id="btnResume">Resume auto-update</button></div>
    <textarea id="report" spellcheck="false"></textarea>
    <div class="muted">Report updates live as you enter data. Edits in this box pause auto-update.</div>
+   <div id="driveStatus" class="muted"></div>
   </div>
+  <div class="card"><details><summary><b>Google Drive settings</b> <span class="muted" id="driveCfgState"></span></summary>
+   <div class="grid" style="margin-top:6px;grid-template-columns:1fr">
+    <label class="f">Apps Script web app URL (…/exec)<input id="cfgUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec"></label>
+    <label class="f">Shared secret (from setup)<input id="cfgSecret" type="password" autocomplete="off"></label></div>
+   <div style="margin-top:6px;display:flex;gap:6px"><button class="btn2" id="btnCfgSave">Save settings</button><button class="btn2" id="btnCfgTest">Test connection</button><button class="btn2 gray" id="btnCfgClear">Forget</button></div>
+   <div class="muted" style="margin-top:4px">URL and secret are stored only in this browser (localStorage). Patient data is never stored in the browser; it is sent only to your own Google Sheet when you press Save. Saved: Reg. No., exam date, age, sex, findings, report. Not saved: sonographer/physician names.</div>
+  </details></div>
   <div class="card"><h2>Criteria &amp; evidence</h2><ul class="crit" id="criteria"></ul>
    <div class="muted">S1 Arterial Doppler Waveform Analysis · S2 SVM/SVU Consensus (Kim, Vasc Med 2020) · S3 Radiology Key: US Diagnosis of Venous Insufficiency · S4 Venous Ultrasound 2e Ch.10 · <span style="color:var(--out);font-weight:600">OUT</span> = outside the uploaded sources</div></div>
  </aside>
@@ -216,7 +226,7 @@ function sideWord(h){return h.side==="Bilateral"?"bilateral":h.side.toLowerCase(
 function headerLines(tab){
  const c=S.common,h=S.hdr[tab],L=[];
  L.push(`EXAM: ${EXAMNAME[tab]}, ${sideWord(h)}.`);
- if(c.pid)L.push(`PATIENT ID: ${c.pid}${c.age?`, ${c.age} y`:""}${c.sex?`, ${c.sex}`:""}`);
+ if(c.pid)L.push(`REG. NO.: ${c.pid}${c.age?`, ${c.age} y`:""}${c.sex?`, ${c.sex}`:""}`);
  L.push(`DATE OF EXAM: ${c.date||"[date]"}`);
  const ind=h.ind.concat(h.indFree?[h.indFree]:[]);L.push(`INDICATION: ${ind.length?ind.join(", "):"[indication]"}.`);
  if(h.history)L.push(`HISTORY: ${h.history}`);
@@ -310,7 +320,7 @@ function venReflux(id,d){const t=num(d.rt);if(t===null||d.st!=="ex"||d.treated||
 const LEVEL={GSV_PT:"proximal thigh",GSV_MT:"mid thigh",GSV_DT:"distal thigh",GSV_K:"knee",GSV_PC:"proximal calf",GSV_MC:"mid calf",GSV_DC:"distal calf",SSV_P:"proximal calf",SSV_M:"mid calf",SSV_D:"distal calf"};
 function contiguous(ids,R){const c=[];for(const id of ids){if(R[id])c.push(id);else break;}return c;}
 /* ---- CEAP 2020 ---- */
-const CEAP_AUTO={};
+const CEAP_AUTO={},CEAP_OUT={};
 function ceapPreview(sd){try{genVen();}catch(_){}return CEAP_AUTO[sd]||{A:"An",P:"Pn",Ps:""};}
 const uniq=a=>[...new Set(a.filter(Boolean))];
 function ceapC(sel,mod){const c=CFG.ceapOrder.filter(x=>sel.includes(x));if(!c.length)return null;
@@ -340,8 +350,10 @@ function ceapString(side,rSeg,oSeg,W,SD,ctx){const x=S.venx,k=side[0];
  const fmt=CFG.ceapFormat;
  const sameAdv=adv===basic;
  const txt=fmt==="basic"?basic:fmt==="advanced"?adv:sameAdv?basic:`${basic} (advanced: ${adv})`;
+ CEAP_OUT[side]={basic,adv};
  return `${SD} CEAP 2020: ${txt}.`;}
 function genVen(){
+ for(const k in CEAP_OUT)delete CEAP_OUT[k];
  const F=[],I=[],W=[],NV=[];commonWarn("ven",W);
  const h=S.hdr.ven;if(!h.pos.length)W.push("Position must be stated (S4 p.182).");if(!h.maneuver.length)W.push("Reflux maneuver not selected.");
  const contra=contraOf("ven"),ceapOut=[];
@@ -484,7 +496,7 @@ const segOpts=defs=>[["","-"]].concat(defs.map(x=>[x[0],x[1]]));
 function headerCard(tab){
  const c=S.common,h=S.hdr[tab],P="hdr."+tab;
  return `<div class="card"><h2>Patient &amp; exam ${ev("header")}</h2><div class="grid">
- <label class="f">Patient ID${inp("common.pid",c.pid,"text")}</label>
+ <label class="f">Registration No. (required to save)${inp("common.pid",c.pid,"text")}</label>
  <label class="f">Age${inp("common.age",c.age)}</label>
  <label class="f">Sex${sel("common.sex",[["","-"],"M","F"],c.sex)}</label>
  <label class="f">Exam date${inp("common.date",c.date,"date")}</label>
@@ -625,10 +637,92 @@ $("#btnCopy").addEventListener("click",async()=>{const ta=$("#report");let ok=fa
  try{if(!navigator.clipboard)throw 0;await Promise.race([navigator.clipboard.writeText(ta.value),new Promise((_,rej)=>setTimeout(()=>rej("timeout"),1500))]);ok=true;}
  catch(_){ta.focus();ta.select();try{ok=document.execCommand("copy");}catch(__){}}
  toast(ok?"Report copied to clipboard":"Copy failed - select the text and press Ctrl+C");});
-$("#btnReset").addEventListener("click",()=>{if(!confirm("Clear all inputs for a new patient?"))return;const tab=S.tab;S=defaultState();S.tab=tab;manual=false;$("#manualNote").classList.add("hide");render();});
+$("#btnReset").addEventListener("click",()=>{if(!confirm("Clear all inputs for a new patient?"))return;const tab=S.tab;S=defaultState();S.tab=tab;manual=false;if($("#driveStatus"))$("#driveStatus").textContent="";$("#manualNote").classList.add("hide");render();});
 function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(toast._t);toast._t=setTimeout(()=>t.style.display="none",1800);}
+/* ================= SAVE TO GOOGLE DRIVE (Apps Script web app) =================
+   Pseudonymized research export. Stored: registration no., exact exam date, age, sex, exam data, auto-interpretation, report.
+   NOT stored: patient name / date of birth (no such fields exist), sonographer / interpreting physician names.
+   Only the endpoint URL and shared secret are kept in localStorage - never patient data. */
+const APP_VERSION="0.3";
+const SHEETNAME={art:"Arterial",ven:"Venous",dvt:"DVT"};
+const CFGKEY="dopplerDriveCfg";
+function driveCfg(){try{return JSON.parse(localStorage.getItem(CFGKEY)||"{}")||{};}catch(_){return{};}}
+function driveCfgSave(c){try{localStorage.setItem(CFGKEY,JSON.stringify({url:c.url||"",secret:c.secret||""}));}catch(_){}}
+const flat=v=>Array.isArray(v)?v.join("; "):typeof v==="boolean"?(v?"Y":""):v==null?"":String(v);
+function localIso(){const d=new Date(),o=-d.getTimezoneOffset(),p=n=>String(Math.abs(n)).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}${o>=0?"+":"-"}${p(Math.trunc(o/60))}:${p(o%60)}`;}
+function caseUid(){try{return crypto.randomUUID();}catch(_){return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,10);}}
+function scrubNames(t){const c=S.common;for(const n of [c.sono,c.phys])if(n&&n.trim())t=t.split(n).join("[ ]");return t;}
+function withoutNames(fn){const c=S.common,a=c.sono,b=c.phys;c.sono="";c.phys="";try{return fn();}finally{c.sono=a;c.phys=b;}}
+/* Build one wide row: returns {columns:[...], values:[...]} */
+function exportRow(tab,opts={}){
+ const c=S.common,h=S.hdr[tab],cols=[],vals=[];const put=(k,v)=>{cols.push(k);vals.push(flat(v));};
+ const r=withoutNames(()=>genReport(tab));
+ put("case_uid",opts.uid||"");put("saved_at",opts.savedAt||"");put("app_version",APP_VERSION);
+ put("reg_no",(c.pid||"").trim());put("exam_date",c.date);put("age",c.age);put("sex",c.sex);
+ put("exam_type",SHEETNAME[tab]);put("side",h.side);put("indication",h.ind.concat(h.indFree?[h.indFree]:[]));put("history",h.history);
+ put("position",h.pos);if(tab==="ven")put("reflux_maneuver",h.maneuver);put("limitations",h.limits.concat(h.limitFree?[h.limitFree]:[]));
+ put("prior_exam_date",h.priorDate);put("change_vs_prior",h.priorChange);put("equipment",c.equip);put("transducer",c.probe);put("interpretation_date",c.interp);
+ const ex=sidesOf(tab),contra=contraOf(tab);
+ for(const side of ["Rt","Lt"])for(const s of SEGDEF[tab]){const id=s[0],d=S.seg[tab][side][id];
+  const on=ex.includes(side)||(side===contra&&id==="CFV");
+  for(const f of Object.keys(segDefault(tab,s)))put(`${side}_${id}_${f}`,on?d[f]:"");
+  if(tab==="ven")put(`${side}_${id}_reflux_auto`,on&&d.st==="ex"?(venReflux(id,d)?"Y":"N"):"");
+  if(tab==="dvt")put(`${side}_${id}_thrombus_auto`,on&&d.st==="ex"?(dvtHasT(d)?"Y":"N"):"");}
+ if(tab==="art"){const a=S.abi;for(const k of Object.keys(a))put("abi_input_"+k,a[k]);
+  for(const side of ["Rt","Lt"]){const v=ex.includes(side)?calcABI(side):null,cl=v&&v.v!=null?abiClass(v.v):null;put(`ABI_${side}`,v&&v.v!=null?v.v:"");put(`ABI_${side}_class`,cl?cl[0]:"");}
+  put("lesions_json",JSON.stringify(S.lesions.map(l=>{const pl=num(l.psvL),pr=num(l.psvR),vr=pl!==null&&pr?Math.round(pl/pr*10)/10:null;return Object.assign({},l,{vr,grade_auto:vr!==null?grade(vr):""});})));}
+ if(tab==="ven"){const x=S.venx;for(const k of Object.keys(x))put("venx_"+k,x[k]);
+  for(const side of ["Rt","Lt"]){const o=CEAP_OUT[side];put(`CEAP_${side}_basic`,o?o.basic:"");put(`CEAP_${side}_advanced`,o?o.adv:"");}
+  put("perforators_json",JSON.stringify(S.perfs));put("varicosities_json",JSON.stringify(S.varis));}
+ if(tab==="dvt")put("other_findings",h.other.concat(h.otherFree?[h.otherFree]:[]));
+ put("findings_text",r.findings.join("\n"));put("impression_text",r.impression.map((x,i)=>`${i+1}. ${cap(x)}`).join("\n"));put("warnings",r.warnings.join("\n"));
+ put("report_text",r.text);
+ const ta=document.querySelector("#report");put("report_manually_edited",manual?"Y":"");put("report_text_final",scrubNames(manual&&ta?ta.value:r.text));
+ const cm=Object.assign({},c);delete cm.sono;delete cm.phys;
+ const inpt={schema:"doppler-report-form/"+APP_VERSION,tab,common:cm,hdr:h,seg:S.seg[tab]};
+ if(tab==="art"){inpt.lesions=S.lesions;inpt.abi=S.abi;}if(tab==="ven"){inpt.perfs=S.perfs;inpt.varis=S.varis;inpt.venx=S.venx;}
+ put("input_json",JSON.stringify(inpt));
+ return{columns:cols,values:vals};
+}
+async function drivePost(body,timeoutMs=25000){const c=driveCfg();
+ if(!c.url)throw new Error("Apps Script URL is not set (Drive settings).");
+ if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(c.url))throw new Error("URL must start with https://script.google.com/");
+ const ctl=typeof AbortController!=="undefined"?new AbortController():null;const tm=setTimeout(()=>ctl&&ctl.abort(),timeoutMs);
+ try{const res=await fetch(c.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({secret:c.secret||""},body)),redirect:"follow",signal:ctl?ctl.signal:undefined});
+  const t=await res.text();let j;try{j=JSON.parse(t);}catch(_){throw new Error("Unexpected response (check deployment access = 'Anyone' and the URL ends with /exec).");}
+  if(!j.ok)throw new Error(j.error||"Server error");return j;}
+ catch(e){if(e&&e.name==="AbortError")throw new Error("Timeout - no response from Apps Script.");if(e&&e.name==="TypeError")throw new Error("Network/CORS error - check the URL and that the web app is deployed.");throw e;}
+ finally{clearTimeout(tm);}}
+function driveStatus(m,ok){const el=$("#driveStatus");if(!el)return;el.textContent=m;el.className=ok===true?"dok":ok===false?"dbad":"muted";}
+let saving=false;
+async function saveToDrive(){
+ if(saving)return;const tab=S.tab,c=S.common;
+ if(!(c.pid||"").trim()){driveStatus("Registration No. is required for saving.",false);toast("Enter Registration No. first");return;}
+ if(!c.date){driveStatus("Exam date is required for saving.",false);return;}
+ saving=true;$("#btnSave").disabled=true;driveStatus("Checking for an existing record...");
+ try{const key={reg_no:c.pid.trim(),exam_date:c.date,exam_type:SHEETNAME[tab]};
+  const chk=await drivePost({action:"check",sheet:SHEETNAME[tab],key});let mode="append";
+  if(chk.count>0){const when=(chk.saved_at||[]).join(", ");
+   if(confirm(`A ${SHEETNAME[tab]} record for Reg. No. ${key.reg_no} on ${key.exam_date} already exists (${chk.count} row(s); saved ${when}).\n\nOK = OVERWRITE the latest row\nCancel = other options`))mode="overwrite";
+   else if(confirm("Save as an additional NEW row instead?\n\nOK = append new row\nCancel = do not save"))mode="append";
+   else{driveStatus("Save cancelled.");return;}}
+  const row=exportRow(tab,{uid:caseUid(),savedAt:localIso()});
+  driveStatus("Saving...");
+  const res=await drivePost({action:"save",sheet:SHEETNAME[tab],key,mode,columns:row.columns,values:row.values});
+  driveStatus(`Saved to sheet "${SHEETNAME[tab]}" (${res.mode==="overwrite"?"overwritten":"new"} row ${res.row}) at ${new Date().toLocaleTimeString()}.`,true);toast("Saved to Google Drive");
+ }catch(e){driveStatus("Save FAILED: "+(e.message||e),false);toast("Save failed");}
+ finally{saving=false;$("#btnSave").disabled=false;}}
+function initDriveUI(){const c=driveCfg();$("#cfgUrl").value=c.url||"";$("#cfgSecret").value=c.secret||"";
+ $("#driveCfgState").textContent=c.url?"configured":"not configured";
+ $("#btnCfgSave").addEventListener("click",()=>{driveCfgSave({url:$("#cfgUrl").value.trim(),secret:$("#cfgSecret").value.trim()});$("#driveCfgState").textContent=$("#cfgUrl").value.trim()?"configured":"not configured";driveStatus("Settings saved on this computer.",true);});
+ $("#btnCfgClear").addEventListener("click",()=>{try{localStorage.removeItem(CFGKEY);}catch(_){}$("#cfgUrl").value="";$("#cfgSecret").value="";$("#driveCfgState").textContent="not configured";driveStatus("Settings removed from this computer.");});
+ $("#btnCfgTest").addEventListener("click",async()=>{driveCfgSave({url:$("#cfgUrl").value.trim(),secret:$("#cfgSecret").value.trim()});$("#driveCfgState").textContent=$("#cfgUrl").value.trim()?"configured":"not configured";driveStatus("Testing connection...");
+  try{const j=await drivePost({action:"ping"});driveStatus(`Connected: "${j.spreadsheet}" (tabs: ${(j.sheets||[]).join(", ")}).`,true);}catch(e){driveStatus("Connection FAILED: "+(e.message||e),false);}});
+ $("#btnSave").addEventListener("click",saveToDrive);}
+initDriveUI();
+
 /* automation/test hook */
-window.DL={get state(){return S},set state(v){S=v},defaultState,genReport,render,refresh,CFG};
+window.DL={get state(){return S},set state(v){S=v},defaultState,genReport,render,refresh,CFG,exportRow,saveToDrive,drivePost,driveCfg,SHEETNAME};
 render();
 </script>
 </body>
