@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LE Vascular Duplex Report Builder</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--line:#d9dee7;--ink:#1d2733;--mute:#6b7685;--acc:#0b6bcb;--acc2:#e8f1fb;--warn:#b54708;--warnbg:#fff4e5;--bad:#b42318;--ok:#067647;--out:#9a3412}
+*{box-sizing:border-box}
+body{margin:0;font:13px/1.4 -apple-system,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif;color:var(--ink);background:var(--bg)}
+header.top{display:flex;align-items:center;gap:16px;padding:8px 16px;background:#13294b;color:#fff;position:sticky;top:0;z-index:5}
+header.top h1{font-size:15px;margin:0;font-weight:600}
+.tabs{display:flex;gap:4px}
+.tabs button{background:transparent;border:1px solid #4a6290;color:#dce6f5;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px}
+.tabs button.on{background:#fff;color:#13294b;border-color:#fff;font-weight:600}
+.top .sp{flex:1}
+.top .btn{background:#2a4a7f;border:0;color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer}
+main{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:12px;padding:12px}
+@media(max-width:1200px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.card h2{font-size:13px;margin:0 0 8px;color:#13294b;display:flex;align-items:center;gap:8px}
+.card h2 .act{margin-left:auto;display:flex;gap:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px 10px}
+label.f{display:flex;flex-direction:column;font-size:11px;color:var(--mute);gap:2px}
+input,select,textarea{font:inherit;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:3px 5px;background:#fff}
+input[type=number]{width:64px}
+label.f input,label.f select{width:100%}
+.chips{display:inline-flex;flex-wrap:wrap;gap:4px}
+.chip{border:1px solid var(--line);border-radius:12px;padding:2px 8px;cursor:pointer;user-select:none;background:#fff;font-size:12px}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.chip.sm{padding:0 6px;font-size:11px;border-radius:9px}
+table.seg{border-collapse:collapse;width:100%;font-size:12px}
+table.seg th{background:#eef2f7;font-weight:600;text-align:left;padding:4px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:11px}
+table.seg td{padding:2px 4px;border-bottom:1px solid #edf0f4;vertical-align:middle}
+table.seg tr.ne td{opacity:.45}
+table.seg tr.ne td:nth-child(2){opacity:1}
+table.seg tr.abn td:first-child{border-left:3px solid var(--warn)}
+table.seg td.nm{white-space:nowrap;font-weight:500}
+table.seg .chips{flex-wrap:nowrap}
+.tw{overflow-x:auto}
+table.seg select{max-width:120px}
+.badge{display:inline-block;padding:0 6px;border-radius:8px;font-size:11px;font-weight:600}
+.b-ok{background:#e7f6ec;color:var(--ok)}.b-bad{background:#fde8e7;color:var(--bad)}.b-mid{background:var(--warnbg);color:var(--warn)}
+.ev{display:inline-block;width:14px;height:14px;line-height:14px;text-align:center;border-radius:50%;background:#e3e8ef;color:#41536b;font-size:10px;cursor:help;margin-left:3px;font-weight:700;vertical-align:middle}
+.ev.out{background:#ffedd5;color:var(--out)}
+.btn2{border:1px solid var(--acc);background:var(--acc2);color:var(--acc);border-radius:5px;padding:3px 9px;cursor:pointer;font-size:12px}
+.btn2:hover{background:var(--acc);color:#fff}
+.btn2.gray{border-color:var(--line);background:#fff;color:var(--ink)}
+.side{display:none}.side.show{display:block}
+.sideh{font-weight:700;margin:8px 0 4px;color:#13294b}
+.rep{position:sticky;top:52px;align-self:start}
+#report{width:100%;height:58vh;font:12px/1.45 Consolas,"SFMono-Regular",Menlo,monospace;white-space:pre-wrap}
+.warn{background:var(--warnbg);color:var(--warn);border-radius:6px;padding:6px 8px;font-size:12px;margin-bottom:6px}
+.warn:empty{display:none}
+.muted{color:var(--mute);font-size:11px}
+.crit{font-size:11px;margin:0;padding-left:16px}
+.crit li{margin:2px 0}
+.crit .o{color:var(--out);font-weight:600}
+.hide{display:none!important}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#13294b;color:#fff;padding:8px 14px;border-radius:6px;display:none}
+</style>
+</head>
+<body>
+<header class="top">
+ <h1>LE Vascular Duplex · Report Builder</h1>
+ <nav class="tabs" id="tabs">
+  <button data-tab="art" class="on">LE Arterial</button>
+  <button data-tab="ven">LE Venous Reflux / Varicose</button>
+  <button data-tab="dvt">LE DVT</button>
+ </nav>
+ <span class="sp"></span>
+ <button class="btn" id="btnReset" title="Clear all inputs (new patient)">New patient</button>
+</header>
+<main>
+ <section id="inputs"></section>
+ <aside class="rep">
+  <div class="card">
+   <h2>Generated report (English, for EMR)<span class="act"><button class="btn2" id="btnCopy">Copy to clipboard</button></span></h2>
+   <div id="warnings" class="warn"></div>
+   <div id="manualNote" class="warn hide">Report text was edited manually; auto-update paused. <button class="btn2 gray" id="btnResume">Resume auto-update</button></div>
+   <textarea id="report" spellcheck="false"></textarea>
+   <div class="muted">Report updates live as you enter data. Edits in this box pause auto-update.</div>
+  </div>
+  <div class="card"><h2>Criteria &amp; evidence</h2><ul class="crit" id="criteria"></ul>
+   <div class="muted">S1 Arterial Doppler Waveform Analysis · S2 SVM/SVU Consensus (Kim, Vasc Med 2020) · S3 Radiology Key: US Diagnosis of Venous Insufficiency · S4 Venous Ultrasound 2e Ch.10 · <span style="color:var(--out);font-weight:600">OUT</span> = outside the uploaded sources</div></div>
+ </aside>
+</main>
+<div id="toast"></div>
+<script>
+"use strict";
+/* ================= CONFIG (mirrors input_spec.json config; user decisions 2026-11-14) ================= */
+const CFG={
+ vr50:2.0, vr75:4.0,                       // S2 Table 7 p.32
+ cfaAT:140,                                // S2 Table 3 p.25; S1 p.13
+ abi:{on:true,normalLow:0.9,high:1.4,severe:0.5}, // S1 p.12/15
+ reflux:{superficial:0.5,deep_fp:1.0,deep_other:0.5,perforator:0.5}, // OUT (user decision)
+ perfDiam:3.5,                             // OUT (SVS/AVF 2011)
+ ceap:true, dvtCalf:true,
+ /* CEAP 2020 (Lurie F et al. J Vasc Surg Venous Lymphat Disord 2020;8:342-52) - OUTSIDE SOURCE */
+ ceapFormat:"both",                        // "both" = basic + (advanced) | "basic" | "advanced"
+ ceapOrder:["C0","C1","C2","C2r","C3","C4a","C4b","C4c","C5","C6","C6r"], // Table III order: display of the advanced C list
+ ceapRank:["C0","C1","C2","C2r","C3","C4a","C4c","C4b","C5","C6","C6r"],  // severity order for basic "highest C" - LOCAL CLINICAL DECISION 2026-11-14 (C4b > C4c > C4a; not defined by the paper)
+ ceapSeg:{SFJ:"GSVa",GSV_PT:"GSVa",GSV_MT:"GSVa",GSV_DT:"GSVa",GSV_K:"GSVa",GSV_PC:"GSVb",GSV_MC:"GSVb",GSV_DC:"GSVb",
+  AAGSV:"AASV",PAGSV:"NSV",TE:"NSV",SPJ:"SSV",SSV_P:"SSV",SSV_M:"SSV",SSV_D:"SSV",
+  CFV:"CFV",FV_P:"FV",FV_D:"FV",DFV:"DFV",POPV:"POPV",GCV:"GAV",PTV:"PTV",trib:"NSV"}, // Table V abbreviations; GSV_K mapped to GSVa (configurable)
+ ceapPerf:{thigh:"TPV",knee:"TPV",calf:"CPV"}  // perforator group prefix -> Table V (knee mapping configurable)
+};
+/* ================= EVIDENCE ================= */
+const EV={
+ header:"S4 pp.182-183: report must state date, indication, exam/position (standing vs supine), equipment/probe, limitations, comparison, impression, signature, date of interpretation.",
+ artDesc:"S2 Tables 1-2 pp.21-24: key major descriptors = flow direction, phasicity (multiphasic/monophasic), resistance (high/intermediate/low).",
+ dir:"S2 Table 2 p.22: antegrade / retrograde / bi-directional (to-fro) / absent.",
+ phas:"S2 Table 2 p.23: multiphasic (former triphasic/biphasic) crosses zero baseline; monophasic does not.",
+ res:"S2 Table 2 p.24: high = sharp upstroke, brisk downstroke; intermediate = end-systolic notch + continuous diastolic forward flow; low = prolonged downstroke, pandiastolic flow, no notch.",
+ up:"S2 Table 3 p.25: rapid vs prolonged upstroke; CFA AT >140 ms = prolonged (S1 p.13).",
+ mod:"S2 Table 3 pp.25-26: SP sharp peak, SB spectral broadening, St staccato, D dampened (parvus et tardus), FR flow reversal.",
+ psv:"S1 p.8: PSV is the most reliable Doppler indicator of arterial disease.",
+ vr:"S2 Table 7 p.32: VR <2 = <50%; VR >2 = 50-74%; VR >4 = >=75% (PSV at stenosis / PSV in normal adjacent proximal segment). S1 p.13 similar.",
+ occ:"S1 p.13; S2 Table 2: no flow in imaged segment = occlusion. Distal waveform dampened monophasic (S2 Table 7 p.33).",
+ plaque:"S1 p.1: B-mode plaque detection. Plaque characterization terms: OUTSIDE SOURCE.",
+ abi:"S1 p.12/p.15: normal 0.9-1.4 (user decision), <0.9 PAD, <0.5 severe, >1.4 non-compressible. Higher-ankle / higher-brachial convention: OUTSIDE SOURCE.",
+ venDesc:"S2 Tables 4-5 pp.27-29: venous descriptors = flow direction, flow pattern, spontaneity; modifiers augmentation, reflux.",
+ spont:"S2 Table 4 p.28: spontaneous / non-spontaneous.",
+ pattern:"S2 Table 4 pp.27-28: respirophasic / decreased / pulsatile / continuous / regurgitant. Continuous = more central obstruction; pulsatile in LE = elevated central venous pressure (Table 9 p.35).",
+ aug:"S2 Table 5 p.29: augmentation normal / reduced (vs contralateral) / absent. Use is controversial but may help detect central obstruction (S2 p.11).",
+ reflux:"Reflux = retrograde flow beyond normal valve closure time (S2 Table 5 p.29). Cutoffs are OUTSIDE SOURCE (user decision): superficial & perforator >0.5 s, CFV/FV/POPV >1.0 s, other deep >0.5 s. S3 p.12: saphenous valves normally close <0.5 s standing.",
+ diam:"S4 p.183: GSV and SSV diameter must be reported; S3 p.3 Fig 21.1.",
+ sfj:"S3 p.5: tributaries (SIEV, SCIV, pudendal) between terminal and preterminal valves can reflux with a competent terminal valve.",
+ perf:"Pathologic perforator >=3.5 mm and outward flow >=0.5 s: OUTSIDE SOURCE (SVS/AVF 2011). Perforator groups: S3 p.10.",
+ vari:"S3 p.12: document location of varicosities. S4 p.183: exam incomplete until the source of reflux is documented.",
+ spj:"S3 p.4 (GSV types i/h/s); S3 pp.9-10: SPJ usually within 5 cm above popliteal crease; patterns A1/A2/B/C.",
+ position:"S4 p.182: position (standing vs supine) must be stated. S3 p.12: pneumatic cuff compression recommended; Valsalva/manual may be insufficient distally.",
+ contra:"S4 p.183: for a unilateral study, the contralateral CFV should be evaluated.",
+ ceap:"CEAP 2020 revision - OUTSIDE SOURCE: Lurie F, et al. The 2020 update of the CEAP classification system and reporting standards. J Vasc Surg Venous Lymphat Disord 2020;8:342-352 (doi:10.1016/j.jvsv.2019.12.075). Basic CEAP = single highest C per limb; advanced CEAP = all C classes present (listed in Table III order). LOCAL CLINICAL DECISION (2026-11-14): for the basic 'highest C', C4b > C4c > C4a (the paper does not rank the C4 subclasses). Each C carries subscript s (symptomatic) or a (asymptomatic). C2r/C6r = recurrent; C4c = corona phlebectatica. E: Ep, Es, Esi, Ese, Ec, En. A: As, Ad, Ap, An (Table V abbreviations GSVa, GSVb, SSV, AASV, NSV, CFV, FV, POPV, PTV, GAV, TPV, CPV ...). P: Pr, Po, Pr,o, Pn; advanced CEAP lists the anatomic segments under each P class. A and P are auto-derived from the duplex findings (editable).",
+ comp:"Compressibility as primary DVT criterion: OUTSIDE SOURCE (SRU consensus 2018, user-adopted). S4 p.183 requires documenting compressible/thrombus.",
+ age:"Acute vs chronic features (echogenicity, vein size, tail, wall thickening, synechiae, recanalization, collaterals): OUTSIDE SOURCE (SRU 2018, user-adopted).",
+ color:"S3 p.1: color Doppler differentiates flow direction; B-mode defines obstruction.",
+ svt:"Superficial vein thrombosis: distance of the thrombus apex to the SFJ/SPJ is recorded only. Whether it is managed as DVT-equivalent is left to clinical judgment (user decision 2026-11-14). OUTSIDE SOURCE.",
+ ind:"S4 p.182: indications for venous exams (VTE, pre-op insufficiency, varicose veins, ulcer, pain/edema/skin changes, end of anticoagulation)."
+};
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function ev(k){const t=EV[k]||k;const out=/OUTSIDE SOURCE/.test(t);return `<span class="ev${out?' out':''}" title="${esc(t)}">${out?'!':'i'}</span>`;}
+
+/* ================= DEFINITIONS ================= */
+const ART_SEG=[
+ ["CIA","CIA","common iliac artery",1],["EIA","EIA","external iliac artery",1],["CFA","CFA","common femoral artery",0],["DFA","DFA","profunda femoris artery",0],
+ ["SFA_P","SFA-P","proximal superficial femoral artery",0],["SFA_M","SFA-M","mid superficial femoral artery",0],["SFA_D","SFA-D","distal superficial femoral artery",0],
+ ["POPA","POP","popliteal artery",0],["TPT","TPT","tibioperoneal trunk",1],["ATA","ATA","anterior tibial artery",0],["PTA","PTA","posterior tibial artery",0],["PERA","PER","peroneal artery",0],["DPA","DPA","dorsalis pedis artery",1]];
+const VEN_SEG=[
+ ["CFV","CFV","common femoral vein","deep_fp",0],["SFJ","SFJ","saphenofemoral junction","superficial",0],
+ ["GSV_PT","GSV prox thigh","GSV, proximal thigh","superficial",0],["GSV_MT","GSV mid thigh","GSV, mid thigh","superficial",0],["GSV_DT","GSV distal thigh","GSV, distal thigh","superficial",0],
+ ["GSV_K","GSV knee","GSV, knee","superficial",0],["GSV_PC","GSV prox calf","GSV, proximal calf","superficial",0],["GSV_MC","GSV mid calf","GSV, mid calf","superficial",1],["GSV_DC","GSV distal calf","GSV, distal calf","superficial",1],
+ ["AAGSV","AAGSV","anterior accessory great saphenous vein","superficial",1],["PAGSV","PAGSV","posterior accessory great saphenous vein","superficial",1],
+ ["FV_P","FV prox","proximal femoral vein","deep_fp",0],["FV_D","FV distal","distal femoral vein","deep_fp",1],["DFV","DFV","deep femoral vein","deep_other",1],
+ ["POPV","POPV","popliteal vein","deep_fp",0],["SPJ","SPJ","saphenopopliteal junction","superficial",0],
+ ["SSV_P","SSV prox","SSV, proximal","superficial",0],["SSV_M","SSV mid","SSV, mid calf","superficial",0],["SSV_D","SSV distal","SSV, distal calf","superficial",1],
+ ["TE","TE/Giacomini","thigh extension/Giacomini vein","superficial",1],["GCV","Gastroc v.","gastrocnemius veins","deep_other",1],["PTV","PTV","posterior tibial veins","deep_other",1]];
+const DVT_SEG=[
+ ["EIV","EIV","external iliac vein","proximal",1],["CFV","CFV","common femoral vein","proximal",0],["SFJ","SFJ/prox GSV","saphenofemoral junction/proximal great saphenous vein","junction",0],
+ ["DFV","DFV","deep femoral vein","proximal",0],["FV_P","FV prox","proximal femoral vein","proximal",0],["FV_M","FV mid","mid femoral vein","proximal",0],["FV_D","FV distal","distal femoral vein","proximal",0],
+ ["POPV","POPV","popliteal vein","proximal",0],["PTV","PTV","posterior tibial veins","distal",0],["PERV","PERV","peroneal veins","distal",0],
+ ["GCV","Gastroc v.","gastrocnemius veins","muscular",0],["SOV","Soleal v.","soleal veins","muscular",0],["GSV","GSV","great saphenous vein","superficial",1],["SSV","SSV","small saphenous vein","superficial",1]];
+const SEGDEF={art:ART_SEG,ven:VEN_SEG,dvt:DVT_SEG};
+const ORDER={art:ART_SEG.map(s=>s[0]),ven:VEN_SEG.map(s=>s[0]),dvt:DVT_SEG.map(s=>s[0])};
+const NAME={art:Object.fromEntries(ART_SEG.map(s=>[s[0],s[2]])),ven:Object.fromEntries(VEN_SEG.map(s=>[s[0],s[2]])),dvt:Object.fromEntries(DVT_SEG.map(s=>[s[0],s[2]]))};
+const VCLASS=Object.fromEntries(VEN_SEG.map(s=>[s[0],s[3]]));
+const DLEVEL=Object.fromEntries(DVT_SEG.map(s=>[s[0],s[3]]));
+const IND={
+ art:["Claudication","Rest pain","Non-healing wound/ulcer","Gangrene/tissue loss","Diminished/absent pulses","Abnormal ABI","Cold extremity","Post-intervention surveillance","Pulsatile mass"],
+ ven:["Varicose veins","Leg pain/heaviness","Edema","Skin changes","Venous ulcer","Pre-procedural evaluation","Recurrent varicose veins","Post-ablation follow-up"],
+ dvt:["Leg swelling","Leg pain/tenderness","Suspected DVT","Suspected pulmonary embolism","Elevated D-dimer","Follow-up of known DVT","End of anticoagulation (residual thrombus)","Pre-operative/high-risk screening"]};
+const LIMITS=["Body habitus","Edema","Dressing/cast","Open wound","Patient intolerance/pain","Vessel calcification","Bowel gas","Unable to stand"];
+const EXAMNAME={art:"Lower extremity arterial duplex ultrasound",ven:"Lower extremity venous insufficiency (reflux) duplex ultrasound",dvt:"Lower extremity venous duplex ultrasound for deep vein thrombosis"};
+const POS={art:["Supine"],ven:["Standing","Reverse Trendelenburg","Sitting","Supine"],dvt:["Supine","Reverse Trendelenburg","Prone (calf/popliteal)","Sitting"]};
+const MODS=[["sharp peak","SP"],["spectral broadening","SB"],["staccato","St"],["dampened","D"],["flow reversal","FR"]];
+const MODPH={"sharp peak":"a sharp peak","spectral broadening":"spectral broadening","staccato":"a staccato pattern","dampened":"dampened morphology","flow reversal":"flow reversal"};
+const DFEAT=[["free-floating tail","tail"],["smooth margins","smooth"],["wall thickening","wall"],["synechiae/webs","web"],["recanalization channels","recan"],["collateral veins","collat"],["irregular/calcified","calc"]];
+const PERF_GROUPS=["thigh medial","thigh anterior","thigh lateral","thigh posterior","knee","calf medial paratibial","calf medial posterior tibial","calf anterior","calf lateral","calf posterior"];
+const VARI_LOC=["medial thigh","anterior thigh","lateral thigh","posterior thigh","medial calf","anterior calf","lateral calf","posterior calf","ankle/foot","suprapubic/vulvar"];
+const VARI_SRC=["GSV","AAGSV","PAGSV","SSV","TE/Giacomini","perforator","pelvic/vulvar","unknown"];
+
+/* ================= STATE ================= */
+function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function segDefault(tab,s){
+ const st=s[tab==="art"?3:4]?"ne":"ex";
+ if(tab==="art")return{st,psv:"",dir:"antegrade",phas:"multiphasic",res:"high",up:"rapid",mods:[],at:"",plaque:"none",occ:false,recon:"",stent:"none"};
+ if(tab==="ven")return{st,treated:false,pat:"compressible",diam:"",rt:"",spont:"spontaneous",pattern:"respirophasic",aug:"normal"};
+ return{st,comp:"full",thr:"none",echo:"",size:"",feat:[],color:"complete",spont:"spontaneous",pattern:"respirophasic",aug:"normal",apex:""};
+}
+function hdrDefault(tab){return{side:"Bilateral",ind:[],indFree:"",history:"",pos:[POS[tab][0]],maneuver:tab==="ven"?["Manual distal compression-release","Valsalva"]:[],limits:[],limitFree:"",priorDate:"",priorChange:"",other:[],otherFree:""};}
+function defaultState(){
+ const st={tab:"art",common:{pid:"",age:"",sex:"",date:today(),equip:"",probe:"",sono:"",phys:"",interp:today()},hdr:{},seg:{},lesions:[],perfs:[],varis:[],
+  abi:{brR:"",brL:"",dpR:"",ptR:"",dpL:"",ptL:"",abiR:"",abiL:""},
+  venx:{gsvPat:"",spjPat:"",spjH:"",tribR:false,tribL:false,ceapCR:[],ceapCL:[],ceapSR:"",ceapSL:"",ceapER:"Ep",ceapEL:"Ep",ceapAR:"",ceapAL:"",ceapPR:"",ceapPL:"",ceapPsR:"",ceapPsL:""}};
+ for(const tab of ["art","ven","dvt"]){st.hdr[tab]=hdrDefault(tab);st.seg[tab]={};
+  for(const side of ["Rt","Lt"]){st.seg[tab][side]={};for(const s of SEGDEF[tab])st.seg[tab][side][s[0]]=segDefault(tab,s);}}
+ return st;
+}
+let S=defaultState();
+
+/* ================= HELPERS ================= */
+const SIDE={Rt:"Right",Lt:"Left"};
+const num=v=>(v===""||v===null||v===undefined||isNaN(+v))?null:+v;
+const list=a=>a.length<=1?(a[0]||""):a.length===2?a[0]+" and "+a[1]:a.slice(0,-1).join(", ")+", and "+a[a.length-1];
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+function sidesOf(tab){const h=S.hdr[tab].side;return h==="Right"?["Rt"]:h==="Left"?["Lt"]:["Rt","Lt"];}
+function contraOf(tab){const h=S.hdr[tab].side;return h==="Right"?"Lt":h==="Left"?"Rt":null;}
+function grade(vr){return vr<CFG.vr50?"<50%":vr<CFG.vr75?"50-74%":">=75%";}
+function gradeTxt(g){return g==="<50%"?"less than 50%":g==="50-74%"?"50-74%":g===">=75%"?"75% or greater":"";}
+function abiClass(v){if(v===null)return null;if(v>CFG.abi.high)return["noncompressible","non-compressible tibial arteries (ABI falsely elevated/unreliable)"];if(v>=CFG.abi.normalLow)return["normal","within normal range"];if(v>=CFG.abi.severe)return["pad","consistent with peripheral arterial disease"];return["severe","consistent with severe peripheral arterial disease"];}
+function calcABI(side){const a=S.abi;const man=num(side==="Rt"?a.abiR:a.abiL);if(man!==null)return{v:man,src:"entered"};
+ const br=Math.max(num(a.brR)||0,num(a.brL)||0);const dp=num(side==="Rt"?a.dpR:a.dpL),pt=num(side==="Rt"?a.ptR:a.ptL);const an=Math.max(dp||0,pt||0);
+ if(!br||!an)return{v:null};return{v:Math.round(an/br*100)/100,src:"calc",dp,pt,br};}
+/* ================= REPORT: common ================= */
+function sideWord(h){return h.side==="Bilateral"?"bilateral":h.side.toLowerCase();}
+function headerLines(tab){
+ const c=S.common,h=S.hdr[tab],L=[];
+ L.push(`EXAM: ${EXAMNAME[tab]}, ${sideWord(h)}.`);
+ if(c.pid)L.push(`PATIENT ID: ${c.pid}${c.age?`, ${c.age} y`:""}${c.sex?`, ${c.sex}`:""}`);
+ L.push(`DATE OF EXAM: ${c.date||"[date]"}`);
+ const ind=h.ind.concat(h.indFree?[h.indFree]:[]);L.push(`INDICATION: ${ind.length?ind.join(", "):"[indication]"}.`);
+ if(h.history)L.push(`HISTORY: ${h.history}`);
+ const pos=h.pos.length?h.pos.map(p=>p.toLowerCase()).join("/"):"[position]";
+ let tech="";
+ if(tab==="art")tech=`B-mode, color and spectral Doppler evaluation of the ${sideWord(h)} lower extremity arteries in the ${pos} position. Waveforms described per SVM/SVU consensus nomenclature; stenosis graded by peak systolic velocity ratio.`;
+ if(tab==="ven")tech=`Duplex ultrasound of the ${sideWord(h)} lower extremity deep and superficial veins in the ${pos} position. Reflux provoked with ${list(h.maneuver.map(m=>m==="Valsalva"?m:m.toLowerCase()))||"[maneuver]"}. Reflux criteria: superficial and perforator veins >${CFG.reflux.superficial} s; common femoral, femoral and popliteal veins >${CFG.reflux.deep_fp} s.`;
+ if(tab==="dvt")tech=`Compression B-mode, color and spectral Doppler evaluation of the ${sideWord(h)} lower extremity deep veins from the common femoral vein${CFG.dvtCalf?" through the calf veins":" to the popliteal vein"}, in the ${pos} position.`;
+ if(c.equip||c.probe)tech+=` Equipment: ${[c.equip,c.probe&&c.probe+" transducer"].filter(Boolean).join(", ")}.`;
+ L.push(`TECHNIQUE: ${tech}`);
+ L.push(`COMPARISON: ${h.priorDate?h.priorDate+".":"None."}`);
+ return L;
+}
+function footerLines(tab,notVis){
+ const c=S.common,h=S.hdr[tab],L=[];
+ const lim=h.limits.concat(h.limitFree?[h.limitFree]:[]);
+ if(lim.length||notVis.length){L.push("");L.push("LIMITATIONS: "+[lim.length?"Technically limited study due to "+lim.join(", ").toLowerCase()+".":"",notVis.length?cap(list(notVis))+" not adequately visualized.":""].filter(Boolean).join(" "));}
+ L.push("");L.push(`Sonographer: ${c.sono||"[ ]"}   Interpreting physician: ${c.phys||"[ ]"}   Date of interpretation: ${c.interp||"[ ]"}`);
+ return L;
+}
+function assemble(tab,F,I,warns,notVis){
+ const h=S.hdr[tab];
+ if(h.priorDate&&h.priorChange)I.push(`Compared with the prior study of ${h.priorDate}: ${h.priorChange.toLowerCase()}.`);
+ const L=headerLines(tab);L.push("");L.push("FINDINGS:");F.forEach(x=>L.push(x));L.push("");L.push("IMPRESSION:");
+ I.forEach((x,i)=>L.push(`${i+1}. ${cap(x)}`));
+ return{text:L.concat(footerLines(tab,notVis)).join("\n"),warnings:warns,findings:F,impression:I};
+}
+function commonWarn(tab,w){const h=S.hdr[tab],c=S.common;if(!h.ind.length&&!h.indFree)w.push("Indication is required (S4 p.182).");if(!c.equip||!c.probe)w.push("Equipment and transducer should be documented (S4 p.183).");if(!c.phys)w.push("Interpreting physician missing.");}
+
+/* ================= ARTERIAL ================= */
+function genArt(){
+ const F=[],I=[],W=[],NV=[];commonWarn("art",W);
+ const idx=id=>ORDER.art.indexOf(id);
+ for(const side of sidesOf("art")){
+  const SD=SIDE[side],seg=S.seg.art[side];
+  const normal=[],psvs=[],occl=[],dampSegs=[],plaques=[],inter=[],bidir=[],retro=[];let inflow=false;
+  for(const id of ORDER.art){const d=seg[id];if(d.st==="ne")continue;const n=NAME.art[id];
+   if(d.st==="nv"){NV.push(`${SD.toLowerCase()} ${n}`);continue;}
+   if(d.occ||d.dir==="absent"){occl.push(id);F.push(`${SD} ${n}: no flow detected, consistent with occlusion${d.recon?`, with reconstitution at the ${NAME.art[d.recon]}`:""}.`);continue;}
+   const at=num(d.at),atLong=id==="CFA"&&at!==null&&at>CFG.cfaAT;
+   const mods=d.mods.filter(m=>m!=="sharp peak");
+   const isAbn=d.dir!=="antegrade"||d.phas!=="multiphasic"||d.res!=="high"||d.up!=="rapid"||mods.length||d.plaque!=="none"||d.stent!=="none"||atLong;
+   const hasLes=S.lesions.some(l=>l.side===side&&l.seg===id);
+   if(!isAbn){if(!hasLes)normal.push(n);if(num(d.psv)!==null)psvs.push(`${id.replace("_","-")} ${num(d.psv)}`);continue;}
+   let s=`${SD} ${n}: ${d.dir}, ${d.phas}, ${d.res} resistive waveform with ${d.up} upstroke`;
+   if(d.mods.length)s+=`, with ${list(d.mods.map(m=>MODPH[m]))}`;
+   if(num(d.psv)!==null)s+=`; PSV ${num(d.psv)} cm/s`;
+   if(id==="CFA"&&at!==null)s+=`; acceleration time ${at} ms`;
+   if(d.plaque!=="none"){s+=`; ${d.plaque==="present"?"":d.plaque+" "}plaque`;plaques.push(n);}
+   if(d.stent!=="none")s+=`; ${d.stent} in situ`;
+   F.push(s+".");
+   if(id==="CFA"&&(d.up==="prolonged"||d.mods.includes("dampened")||atLong))inflow=true;
+   else if(d.phas==="monophasic"&&(d.up==="prolonged"||d.mods.includes("dampened")))dampSegs.push(id);
+   if(d.res==="intermediate")inter.push(n);
+   if(d.dir==="bi-directional")bidir.push(n);
+   if(d.dir==="retrograde")retro.push(n);
+  }
+  if(normal.length)F.push(`${SD} ${list(normal)}: antegrade, multiphasic, high resistive waveforms with rapid upstroke; no plaque, stenosis, or occlusion identified.`);
+  if(psvs.length)F.push(`${SD} PSV (cm/s): ${psvs.join(", ")}.`);
+  const sig=[],mild=[];
+  for(const l of S.lesions.filter(l=>l.side===side&&l.seg)){const pl=num(l.psvL),pr=num(l.psvR);let vr=null,g=l.grade;
+   if(pl!==null&&pr)vr=Math.round(pl/pr*10)/10;
+   if(!g||g==="auto"){if(vr===null){W.push(`${SD} ${NAME.art[l.seg]} lesion: enter PSV at stenosis and proximal reference PSV.`);continue;}g=grade(vr);}
+   F.push(`${SD} ${NAME.art[l.seg]}: focal stenosis${pl!==null?` with PSV ${pl} cm/s`:""}${pr?` (proximal reference ${pr} cm/s${vr!==null?`, velocity ratio ${vr}`:""})`:""}${num(l.len)!==null?`, length ${num(l.len)} cm`:""}, consistent with ${gradeTxt(g)} diameter stenosis.`);
+   (g==="<50%"?mild:sig).push({id:l.seg,g,vr});}
+  let abiI=null;
+  if(CFG.abi.on){const a=calcABI(side);if(a.v!==null){const cl=abiClass(a.v);
+   F.push(`${SD} ABI: ${a.v.toFixed(2)}${a.src==="calc"?` (ankle ${Math.max(a.dp||0,a.pt||0)} mmHg [DP ${a.dp??"-"}, PT ${a.pt??"-"}] / brachial ${a.br} mmHg)`:""}.`);
+   abiI=`${SD} ABI ${a.v.toFixed(2)}, ${cl[1]}.`;}}
+  const before=I.length;
+  sig.sort((a,b)=>idx(a.id)-idx(b.id)).forEach(x=>I.push(`${SD} ${NAME.art[x.id]}: ${gradeTxt(x.g)} diameter stenosis${x.vr!==null?` (velocity ratio ${x.vr})`:""}.`));
+  occl.forEach(id=>{const d=seg[id];I.push(`${SD} ${NAME.art[id]} occlusion${d.recon?`, with reconstitution at the ${NAME.art[d.recon]}`:""}.`);});
+  if(inflow)I.push(`${SD} common femoral artery waveform with prolonged upstroke suggests proximal (aortoiliac) inflow disease.`);
+  const lesIdx=sig.map(x=>idx(x.id)).concat(occl.map(idx));
+  const ds=dampSegs.filter(id=>!sig.some(x=>x.id===id));
+  if(ds.length){const explained=inflow||ds.every(id=>lesIdx.some(li=>li<idx(id)));
+   I.push(`${SD} dampened monophasic waveforms in the ${list(ds.map(id=>NAME.art[id]))} ${explained?"are consistent with the more proximal flow-limiting disease":"suggest more proximal flow-limiting disease not directly identified on this study"}.`);}
+  if(bidir.length)I.push(`${SD} bi-directional (to-and-fro) flow in the ${list(bidir)}; if within the neck of a perivascular sac, consistent with pseudoaneurysm.`);
+  if(retro.length)I.push(`${SD} retrograde flow in the ${list(retro)}.`);
+  if(inter.length&&I.length===before)I.push(`${SD} intermediate resistive waveforms in the ${list(inter)}; may reflect vasodilation (exercise, warming, medication) or more distal obstruction.`);
+  mild.forEach(x=>I.push(`${SD} ${NAME.art[x.id]}: less than 50% diameter stenosis.`));
+  if(I.length===before)I.push(`${SD} lower extremity: no hemodynamically significant (50% or greater) arterial stenosis or occlusion${plaques.length?`; atherosclerotic plaque in the ${list(plaques)}`:""}.`);
+  else if(plaques.length&&!sig.length&&!occl.length&&!inflow)I.push(`${SD} atherosclerotic plaque in the ${list(plaques)} without hemodynamically significant stenosis.`);
+  if(abiI)I.push(abiI);
+ }
+ return assemble("art",F,I,W,NV);
+}
+
+/* ================= VENOUS REFLUX ================= */
+function venReflux(id,d){const t=num(d.rt);if(t===null||d.st!=="ex"||d.treated||d.pat==="ablated")return false;return t>CFG.reflux[VCLASS[id]];}
+const LEVEL={GSV_PT:"proximal thigh",GSV_MT:"mid thigh",GSV_DT:"distal thigh",GSV_K:"knee",GSV_PC:"proximal calf",GSV_MC:"mid calf",GSV_DC:"distal calf",SSV_P:"proximal calf",SSV_M:"mid calf",SSV_D:"distal calf"};
+function contiguous(ids,R){const c=[];for(const id of ids){if(R[id])c.push(id);else break;}return c;}
+/* ---- CEAP 2020 ---- */
+const CEAP_AUTO={};
+function ceapPreview(sd){try{genVen();}catch(_){}return CEAP_AUTO[sd]||{A:"An",P:"Pn",Ps:""};}
+const uniq=a=>[...new Set(a.filter(Boolean))];
+function ceapC(sel,mod){const c=CFG.ceapOrder.filter(x=>sel.includes(x));if(!c.length)return null;
+ const hi=CFG.ceapRank.filter(x=>sel.includes(x)).pop();
+ const m=mod?","+mod:"";return{basic:hi+m,adv:"C"+c.map(x=>x.slice(1)).join(",")+m,list:c};}
+function ceapAuto(rSeg,oSeg){const sys=["s","d","p"];
+ const A=sys.filter(k=>rSeg[k].length||oSeg[k].length);
+ const r=sys.some(k=>rSeg[k].length),o=sys.some(k=>oSeg[k].length);
+ const P=r&&o?"r,o":r?"r":o?"o":"n";
+ const rs=uniq([].concat(rSeg.s,rSeg.d,rSeg.p)),os=uniq([].concat(oSeg.s,oSeg.d,oSeg.p));
+ const Ps=[r&&rs.length?"Pr "+rs.join(", "):"",o&&os.length?"Po "+os.join(", "):""].filter(Boolean).join("; ");
+ return{A:A.length?"A"+A.join(","):"An",P:"P"+P,Ps};}
+function ceapString(side,rSeg,oSeg,W,SD,ctx){const x=S.venx,k=side[0];
+ const sel=x["ceapC"+k]||[],mod=x["ceapS"+k],E=x["ceapE"+k]||"";
+ const au=ceapAuto(rSeg,oSeg);CEAP_AUTO[side]=au;
+ if(!sel.length){W.push(`${SD} CEAP clinical class (C) not selected.`);return null;}
+ if(!mod)W.push(`${SD} CEAP: select symptomatic (s) or asymptomatic (a).`);
+ if(sel.includes("C0")&&sel.length>1)W.push(`${SD} CEAP: C0 selected together with other C classes - please check.`);
+ if(sel.includes("C2")&&sel.includes("C2r"))W.push(`${SD} CEAP: both C2 and C2r selected - recurrent varicose veins are coded as C2r.`);
+ if(sel.includes("C6")&&sel.includes("C6r"))W.push(`${SD} CEAP: both C6 and C6r selected - a recurrent active ulcer is coded as C6r.`);
+ const C=ceapC(sel,mod);
+ const norm=(v,pre)=>{v=v.trim();if(!v)return null;return v.toUpperCase().startsWith(pre)?pre+v.slice(1):pre+v;};
+ const A=norm(x["ceapA"+k]||"","A")||au.A,P=norm(x["ceapP"+k]||"","P")||au.P,Ps=(x["ceapPs"+k]||"").trim()||au.Ps;
+ if(ctx.deepT&&E==="Ep")W.push(`${SD} CEAP: deep vein non-compressible (possible post-thrombotic change) - consider Esi instead of Ep.`);
+ if(ctx.central&&!/o/.test(P))W.push(`${SD} CEAP: CFV flow suggests central obstruction - add Po (e.g. CIV/EIV) if iliac obstruction is confirmed.`);
+ const basic=`${C.basic} ${E} ${A} ${P}`,adv=`${C.adv} ${E} ${A} ${Ps||P}`;
+ const fmt=CFG.ceapFormat;
+ const sameAdv=adv===basic;
+ const txt=fmt==="basic"?basic:fmt==="advanced"?adv:sameAdv?basic:`${basic} (advanced: ${adv})`;
+ return `${SD} CEAP 2020: ${txt}.`;}
+function genVen(){
+ const F=[],I=[],W=[],NV=[];commonWarn("ven",W);
+ const h=S.hdr.ven;if(!h.pos.length)W.push("Position must be stated (S4 p.182).");if(!h.maneuver.length)W.push("Reflux maneuver not selected.");
+ const contra=contraOf("ven"),ceapOut=[];
+ for(const side of sidesOf("ven")){
+  const SD=SIDE[side],seg=S.seg.ven[side],R={};const deepNormal=[],deepAbn=[],supNormal=[],thromb=[],sThromb=[],treated=[];
+  for(const id of ORDER.ven){const d=seg[id];if(d.st==="ne")continue;const n=NAME.ven[id];
+   if(d.st==="nv"){NV.push(`${SD.toLowerCase()} ${n}`);continue;}
+   const deep=VCLASS[id]!=="superficial";R[id]=venReflux(id,d);const t=num(d.rt);
+   if(d.treated||d.pat==="ablated"){treated.push(id);F.push(`${SD} ${n}: treated segment, ${d.pat==="ablated"?"occluded (post-ablation)":"patent"}${num(d.diam)!==null?`, ${num(d.diam)} mm`:""}.`);continue;}
+   if(d.pat==="noncompressible")(deep?thromb:sThromb).push(id);
+   const rtxt=R[id]?`reflux present (${t} s)`:"no reflux"+(t!==null?` (${t} s)`:"");
+   if(deep){
+    if(d.pat==="compressible"&&d.spont==="spontaneous"&&d.pattern==="respirophasic"&&d.aug==="normal"&&!R[id]){deepNormal.push(n);continue;}
+    F.push(`${SD} ${n}: ${d.pat==="compressible"?"compressible":"non-compressible (suspicious for thrombus)"}; ${d.spont}, ${d.pattern} flow; ${d.aug} augmentation; ${rtxt}.`);
+    if(R[id])deepAbn.push(id);
+   }else{
+    const di=num(d.diam);
+    if(!R[id]&&d.pat==="compressible"&&di===null){supNormal.push(n);continue;}
+    F.push(`${SD} ${n}: ${di!==null?`diameter ${di} mm; `:""}${d.pat==="noncompressible"?"non-compressible (suspicious for thrombus); ":""}${rtxt}.`);
+   }
+  }
+  for(const pre of ["GSV","SSV"]){const ids=ORDER.ven.filter(id=>id.startsWith(pre)&&seg[id].st==="ex");if(ids.length&&!ids.some(id=>num(seg[id].diam)!==null))W.push(`${SD} ${pre} diameter not entered (required, S4 p.183).`);}
+  if(deepNormal.length)F.push(`${SD} ${list(deepNormal)}: compressible with spontaneous, respirophasic flow and normal augmentation; no reflux.`);
+  if(supNormal.length)F.push(`${SD} ${list(supNormal)}: compressible; no reflux.`);
+  const perfI=[],perfInc=[];let anyPerf=false;
+  for(const p of S.perfs.filter(p=>p.side===side)){const dm=num(p.diam),t=num(p.t);const inc=t!==null&&t>=CFG.reflux.perforator,big=dm!==null&&dm>=CFG.perfDiam;
+   const st=inc&&big?"incompetent (pathologic)":inc?"incompetent":"competent";if(inc){anyPerf=true;perfInc.push(p.group);}
+   F.push(`${SD} ${p.group} perforator${num(p.dist)!==null?` at ${num(p.dist)} cm ${p.ref}`:""}: diameter ${dm??"-"} mm, outward flow ${t??"-"} s${p.conn?`, connecting to the ${p.conn}`:""}; ${st}.`);
+   if(inc)perfI.push(`${SD} ${st} ${p.group} perforator (${dm??"-"} mm, ${t} s)${p.ulcer?" beneath the ulcer bed":""}.`);}
+  const gsv=ORDER.ven.filter(id=>id.startsWith("GSV")&&seg[id].st==="ex"&&!treated.includes(id)),gr=gsv.filter(id=>R[id]);
+  const trib=side==="Rt"?S.venx.tribR:S.venx.tribL;
+  if(R.SFJ&&gr.length){let c=contiguous(gsv,R);if(!c.length)c=[gr[0]];const dd=c.map(id=>num(seg[id].diam)).filter(x=>x!==null);
+   I.push(`${SD} saphenofemoral junction incompetence with great saphenous vein reflux from the SFJ to the ${LEVEL[c[c.length-1]]}${dd.length?` (GSV diameter ${Math.min(...dd)}${dd.length>1?`-${Math.max(...dd)}`:""} mm)`:""}.`);
+   const rest=gr.filter(id=>!c.includes(id));if(rest.length)I.push(`${SD} additional segmental GSV reflux at the ${list(rest.map(id=>LEVEL[id]))}.`);}
+  else if(R.SFJ)I.push(`${SD} saphenofemoral junction incompetence without great saphenous vein truncal reflux.`);
+  else if(gr.length){I.push(`${SD} segmental great saphenous vein reflux at the ${list(gr.map(id=>LEVEL[id]))} with a competent SFJ${trib?"; reflux arising from SFJ tributaries":""}.`);
+   if(!trib&&!anyPerf)W.push(`${SD} segmental GSV reflux with competent SFJ: identify the source (perforator/tributary) (S3 pp.12-13).`);}
+  else if(trib)I.push(`${SD} reflux in SFJ tributaries with a competent terminal valve.`);
+  const ssv=ORDER.ven.filter(id=>id.startsWith("SSV")&&seg[id].st==="ex"&&!treated.includes(id)),sr=ssv.filter(id=>R[id]);
+  if(R.SPJ&&sr.length){let c=contiguous(ssv,R);if(!c.length)c=[sr[0]];const dd=c.map(id=>num(seg[id].diam)).filter(x=>x!==null);
+   I.push(`${SD} saphenopopliteal junction incompetence with small saphenous vein reflux to the ${LEVEL[c[c.length-1]]}${dd.length?` (SSV diameter up to ${Math.max(...dd)} mm)`:""}.`);}
+  else if(R.SPJ)I.push(`${SD} saphenopopliteal junction incompetence.`);
+  else if(sr.length)I.push(`${SD} segmental small saphenous vein reflux at the ${list(sr.map(id=>LEVEL[id]))} with a competent SPJ.`);
+  ["AAGSV","PAGSV","TE"].forEach(id=>{if(R[id])I.push(`${SD} ${NAME.ven[id]} reflux${num(seg[id].diam)!==null?` (${num(seg[id].diam)} mm)`:""}.`);});
+  perfI.forEach(x=>I.push(x));
+  for(const v of S.varis.filter(v=>v.side===side)){F.push(`${SD} varicosities in the ${v.loc}${num(v.diam)!==null?` (up to ${num(v.diam)} mm)`:""}, fed by the ${v.src==="unknown"?"[source not identified]":v.src}.`);
+   if(v.src==="unknown"){I.push(`${SD} source of reflux for the ${v.loc} varicosities not identified.`);W.push(`${SD} ${v.loc} varicosities: source of reflux not documented; study incomplete (S4 p.183).`);}}
+  if(thromb.length)I.push(`${SD} non-compressible ${list(thromb.map(id=>NAME.ven[id]))}, suspicious for deep vein thrombus; dedicated DVT evaluation recommended.`);
+  if(sThromb.length)I.push(`${SD} non-compressible ${list(sThromb.map(id=>NAME.ven[id]))}, suspicious for superficial vein thrombosis.`);
+  if(deepAbn.length)I.push(`${SD} deep venous reflux in the ${list(deepAbn.map(id=>NAME.ven[id]))}.`);
+  const cfv=seg.CFV,central=cfv.st==="ex"&&(cfv.pattern==="continuous"||cfv.spont==="non-spontaneous");
+  if(central)I.push(`${SD} continuous/non-spontaneous common femoral vein flow suggests more central (iliocaval) venous obstruction or extrinsic compression; further evaluation of the iliac veins/IVC is recommended.`);
+  const supAny=gr.length||R.SFJ||R.SPJ||sr.length||["AAGSV","PAGSV","TE"].some(id=>R[id])||trib;
+  if(!supAny&&!anyPerf&&!deepAbn.length&&!thromb.length&&!sThromb.length)I.push(`${SD} no significant superficial, perforator, or deep venous reflux; deep veins compressible.`);
+  else if(!deepAbn.length&&!thromb.length)I.push(`${SD} no deep venous reflux; deep veins compressible.`);
+  if(CFG.ceap){
+   const supR=ORDER.ven.filter(id=>VCLASS[id]==="superficial"&&R[id]&&!treated.includes(id));
+   const rSeg={s:supR.map(id=>CFG.ceapSeg[id]).concat(trib?[CFG.ceapSeg.trib]:[]),d:deepAbn.map(id=>CFG.ceapSeg[id]),p:perfInc.map(g=>CFG.ceapPerf[g.split(" ")[0]])};
+   const oSeg={s:sThromb.map(id=>CFG.ceapSeg[id]),d:thromb.map(id=>CFG.ceapSeg[id]),p:[]};
+   const c=ceapString(side,rSeg,oSeg,W,SD,{central,deepT:thromb.length>0});
+   if(c)ceapOut.push(c);}
+ }
+ if(contra){const d=S.seg.ven[contra].CFV;if(d.st!=="ex")W.push(`Unilateral study: contralateral (${SIDE[contra].toLowerCase()}) CFV should be evaluated (S4 p.183).`);
+  else{F.push(`Contralateral ${SIDE[contra].toLowerCase()} common femoral vein: ${d.pat==="compressible"?"compressible":"non-compressible"}; ${d.spont}, ${d.pattern} flow.`);
+   if(d.pattern!=="respirophasic"||d.spont!=="spontaneous")I.push(`Contralateral ${SIDE[contra].toLowerCase()} common femoral vein with ${d.spont}, ${d.pattern} flow; consider central venous obstruction or a systemic cause.`);}}
+ const pul=["Rt","Lt"].filter(s=>(sidesOf("ven").includes(s)||s===contra)&&S.seg.ven[s].CFV.st==="ex"&&S.seg.ven[s].CFV.pattern==="pulsatile");
+ if(pul.length)I.push(`Pulsatile common femoral vein flow${pul.length===2?" bilaterally":""} may reflect elevated central venous pressure (e.g., heart failure, tricuspid regurgitation, pulmonary hypertension).`);
+ ceapOut.forEach(x=>I.push(x));
+ return assemble("ven",F,I,W,NV);
+}
+
+/* ================= DVT ================= */
+const ACUTE=new Set(["hypoechoic","distended","free-floating tail","smooth margins"]),CHRON=new Set(["hyperechoic","contracted","wall thickening","synechiae/webs","recanalization channels","collateral veins","irregular/calcified"]);
+const COMPTXT={full:"fully compressible",partial:"partially compressible",none:"non-compressible",na:"compressibility not assessed"};
+const ECHOTXT={hypoechoic:"hypoechoic",mixed:"mixed echogenicity",hyperechoic:"echogenic"};
+function dvtHasT(d){return d.comp==="partial"||d.comp==="none"||d.thr!=="none";}
+function genDvt(){
+ const F=[],I=[],W=[],NV=[];commonWarn("dvt",W);
+ const contra=contraOf("dvt");
+ const flowTxt=d=>`${d.spont}, ${d.pattern} flow with ${d.aug} augmentation`;
+ for(const side of sidesOf("dvt")){
+  const SD=SIDE[side],seg=S.seg.dvt[side];const normal=[],pos=[],sup=[],naComp=[];
+  for(const id of ORDER.dvt){const d=seg[id];if(d.st==="ne")continue;const n=NAME.dvt[id];
+   if(d.st==="nv"){NV.push(`${SD.toLowerCase()} ${n}`);continue;}
+   const hasT=dvtHasT(d);
+   if(d.comp==="na")naComp.push(n);
+   if(hasT){if(d.thr==="none")W.push(`${SD} ${n}: abnormal compressibility - specify thrombus (occlusive/non-occlusive).`);
+    if(d.thr==="occlusive"&&d.color==="complete")W.push(`${SD} ${n}: occlusive thrombus but complete color filling - please check.`);
+    const fe=[ECHOTXT[d.echo],d.size==="distended"?"vein distended":d.size==="contracted"?"vein contracted":""].concat(d.feat).filter(Boolean);
+    F.push(`${SD} ${n}: ${COMPTXT[d.comp]}, with ${d.thr==="occlusive"?"occlusive ":d.thr==="non-occlusive"?"non-occlusive ":""}intraluminal thrombus${fe.length?` (${fe.join(", ")})`:""}; ${d.color==="complete"?"color filling preserved":d.color==="partial"?"partial color filling":"no color flow"}${num(d.apex)!==null?`; thrombus apex ${num(d.apex)} cm from the ${id==="SSV"?"saphenopopliteal":"saphenofemoral"} junction`:""}.`);
+    (["superficial","junction"].includes(DLEVEL[id])?sup:pos).push([id,d]);}
+   else if(d.comp!=="na")normal.push(n);
+   if(["EIV","CFV","POPV"].includes(id)&&!hasT){const abnF=d.spont!=="spontaneous"||d.pattern!=="respirophasic"||d.aug!=="normal";if(abnF||id==="CFV")F.push(`${SD} ${n}: ${flowTxt(d)}.`);}
+  }
+  if(normal.length)F.push(`${SD} ${list(normal)}: fully compressible with normal color filling; no intraluminal thrombus.`);
+  if(naComp.length)W.push(`${SD}: compressibility not assessed in ${list(naComp)}.`);
+  if(pos.length){
+   const feats=new Set();pos.forEach(([,d])=>{if(d.echo)feats.add(d.echo);if(d.size)feats.add(d.size);d.feat.forEach(f=>feats.add(f));});
+   const a=[...feats].filter(f=>ACUTE.has(f)).length,c=[...feats].filter(f=>CHRON.has(f)).length;
+   const chronic=c&&!a;
+   const age=a&&!c?"acute":chronic?"chronic":a&&c?"mixed acute- and chronic-appearing (possible acute-on-chronic)":"indeterminate-age";
+   const occ=pos.some(([,d])=>d.thr==="occlusive")?(pos.every(([,d])=>d.thr==="occlusive")?"occlusive":"occlusive and non-occlusive"):"non-occlusive";
+   const lv=new Set(pos.map(([id])=>DLEVEL[id]));
+   const lvl=lv.has("proximal")?(lv.has("distal")||lv.has("muscular")?"proximal DVT extending into the calf veins":"proximal DVT"):lv.has("distal")?"distal (calf) DVT":"isolated muscular calf vein thrombosis";
+   const tail=pos.some(([,d])=>d.feat.includes("free-floating tail"));
+   I.push(`${SD} ${age} ${occ} ${chronic?"post-thrombotic (chronic) venous thrombus":"deep vein thrombosis"} involving the ${list(pos.map(([id])=>NAME.dvt[id]))} (${lvl})${tail?", with a free-floating thrombus tail":""}.`);
+  }
+  sup.forEach(([id,d])=>{const j=id==="SSV"?"saphenopopliteal junction":"saphenofemoral junction";
+   if(num(d.apex)===null)W.push(`${SD} ${NAME.dvt[id]} thrombus: distance of the thrombus apex to the ${j} not entered.`);
+   I.push(`${SD} ${id==="SFJ"?"thrombus at the saphenofemoral junction/proximal great saphenous vein":`superficial vein thrombosis of the ${NAME.dvt[id]}`}${num(d.apex)!==null?`, thrombus apex ${num(d.apex)} cm from the ${j}`:""}.`);});
+  if(!pos.length)I.push(`${SD} no evidence of deep vein thrombosis${CFG.dvtCalf?" from the common femoral vein through the calf veins":""}.`);
+  const cfv=seg.CFV,eiv=seg.EIV,eivT=eiv.st==="ex"&&dvtHasT(eiv);
+  if(cfv.st==="ex"&&!dvtHasT(cfv)&&!eivT&&(cfv.pattern==="continuous"||cfv.spont==="non-spontaneous"||(eiv.st==="ex"&&eiv.pattern==="continuous")))
+   I.push(`${SD} continuous/non-spontaneous common femoral vein flow suggests more central (iliocaval) venous obstruction or extrinsic compression; consider iliac vein/IVC imaging.`);
+  const augRed=["CFV","POPV"].filter(id=>seg[id].st==="ex"&&["reduced","absent"].includes(seg[id].aug)&&!dvtHasT(seg[id]));
+  if(augRed.length&&!pos.length)I.push(`${SD} ${seg[augRed[0]].aug} augmentation at the ${list(augRed.map(id=>NAME.dvt[id]))} without thrombus at the sampling site; obstruction between the sampling and compression sites cannot be excluded.`);
+ }
+ if(contra){const d=S.seg.dvt[contra].CFV;if(d.st!=="ex")W.push(`Unilateral study: contralateral (${SIDE[contra].toLowerCase()}) CFV should be evaluated (S4 p.183).`);
+  else{F.push(`Contralateral ${SIDE[contra].toLowerCase()} common femoral vein: ${COMPTXT[d.comp]}; ${flowTxt(d)}.`);
+   I.push(!dvtHasT(d)?`Contralateral ${SIDE[contra].toLowerCase()} common femoral vein compressible with ${d.pattern} flow.`:`Contralateral ${SIDE[contra].toLowerCase()} common femoral vein ${COMPTXT[d.comp]}, suspicious for thrombus; bilateral examination recommended.`);}}
+ const pul=["Rt","Lt"].filter(s=>(sidesOf("dvt").includes(s)||s===contra)&&S.seg.dvt[s].CFV.st==="ex"&&S.seg.dvt[s].CFV.pattern==="pulsatile");
+ if(pul.length)I.push(`Pulsatile common femoral vein flow${pul.length===2?" bilaterally":""} may reflect elevated central venous pressure (e.g., heart failure, tricuspid regurgitation, pulmonary hypertension).`);
+ const h=S.hdr.dvt,oth=h.other.concat(h.otherFree?[h.otherFree]:[]);
+ if(oth.length){F.push(`Other findings: ${oth.join(", ")}.`);I.push(`Incidental: ${oth.join(", ").toLowerCase()}.`);}
+ return assemble("dvt",F,I,W,NV);
+}
+function genReport(tab){return tab==="art"?genArt():tab==="ven"?genVen():genDvt();}
+/* ================= UI ================= */
+const $=s=>document.querySelector(s);
+function opt(arr,val){return arr.map(o=>{const [v,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(v)}"${String(val)===String(v)?" selected":""}>${esc(l)}</option>`;}).join("");}
+function sel(path,arr,val){return `<select data-p="${path}">${opt(arr,val)}</select>`;}
+function inp(path,val,type="number",ph="",w=""){return `<input data-p="${path}" type="${type}" value="${esc(val??"")}" placeholder="${esc(ph)}" ${type==="number"?'step="any" min="0"':""} ${w?`style="width:${w}"`:""}>`;}
+function chk(path,val,label=""){return `<label style="white-space:nowrap"><input type="checkbox" data-p="${path}" ${val?"checked":""}> ${label}</label>`;}
+function chips(path,options,vals,small){return `<span class="chips">${options.map(o=>{const [v,l]=Array.isArray(o)?o:[o,o];return `<span class="chip${small?" sm":""}${vals.includes(v)?" on":""}" data-chip="${path}" data-v="${esc(v)}" title="${esc(v)}">${esc(l)}</span>`;}).join("")}</span>`;}
+function get(path){return path.split(".").reduce((o,k)=>o==null?o:o[k],S);}
+function set(path,v){const ks=path.split(".");let o=S;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=v;}
+const STAT=[["ex","Examined"],["nv","Not visualized"],["ne","Not examined"]];
+const segOpts=defs=>[["","-"]].concat(defs.map(x=>[x[0],x[1]]));
+
+function headerCard(tab){
+ const c=S.common,h=S.hdr[tab],P="hdr."+tab;
+ return `<div class="card"><h2>Patient &amp; exam ${ev("header")}</h2><div class="grid">
+ <label class="f">Patient ID${inp("common.pid",c.pid,"text")}</label>
+ <label class="f">Age${inp("common.age",c.age)}</label>
+ <label class="f">Sex${sel("common.sex",[["","-"],"M","F"],c.sex)}</label>
+ <label class="f">Exam date${inp("common.date",c.date,"date")}</label>
+ <label class="f">Side examined${sel(P+".side",["Bilateral","Right","Left"],h.side)}</label>
+ <label class="f">Sonographer${inp("common.sono",c.sono,"text")}</label>
+ <label class="f">Interpreting physician${inp("common.phys",c.phys,"text")}</label>
+ <label class="f">Equipment${inp("common.equip",c.equip,"text")}</label>
+ <label class="f">Transducer${inp("common.probe",c.probe,"text","e.g. L12-3 linear")}</label>
+ <label class="f">Date of interpretation${inp("common.interp",c.interp,"date")}</label>
+ <label class="f">Prior exam date${inp(P+".priorDate",h.priorDate,"date")}</label>
+ <label class="f">Change vs prior${sel(P+".priorChange",[["","-"],"No significant change","New finding","Progression","Improvement","Resolution"],h.priorChange)}</label>
+ </div>
+ <div style="margin-top:6px"><span class="muted">Indication ${ev("ind")}</span> ${chips(P+".ind",IND[tab],h.ind)} ${inp(P+".indFree",h.indFree,"text","other indication","200px")}</div>
+ <div style="margin-top:6px"><span class="muted">Position ${ev("position")}</span> ${chips(P+".pos",POS[tab],h.pos)}
+ ${tab==="ven"?`<span class="muted" style="margin-left:10px">Reflux maneuver</span> ${chips(P+".maneuver",["Valsalva","Manual distal compression-release","Pneumatic cuff","Active dorsiflexion"],h.maneuver)}`:""}</div>
+ <div style="margin-top:6px"><span class="muted">History</span> ${inp(P+".history",h.history,"text","prior intervention, anticoagulation, prior DVT ...","60%")}</div>
+ <div style="margin-top:6px"><span class="muted">Limitations</span> ${chips(P+".limits",LIMITS,h.limits)} ${inp(P+".limitFree",h.limitFree,"text","other","160px")}</div>
+ </div>`;
+}
+function sideBlock(tab,side,rowFn,thead,onlyIds){
+ const defs=SEGDEF[tab].filter(s=>!onlyIds||onlyIds.includes(s[0]));
+ return `<div class="sideh">${SIDE[side]}${onlyIds?" (contralateral CFV)":""} <button class="btn2" data-allnormal="${tab}.${side}">All normal</button></div>
+ <div class="tw"><table class="seg"><thead><tr>${thead}</tr></thead><tbody>${defs.map(s=>rowFn(side,s)).join("")}</tbody></table></div>`;
+}
+function artRow(side,s){const id=s[0],d=S.seg.art[side][id],p=`seg.art.${side}.${id}`;
+ const abn=d.st==="ex"&&(d.occ||d.dir!=="antegrade"||d.phas!=="multiphasic"||d.res!=="high"||d.up!=="rapid"||d.mods.some(m=>m!=="sharp peak")||d.plaque!=="none");
+ return `<tr class="${d.st!=="ex"?"ne":""}${abn?" abn":""}" data-row="${side}.${id}"><td class="nm" title="${s[2]}">${s[1]}</td><td>${sel(p+".st",STAT,d.st)}</td><td>${inp(p+".psv",d.psv)}</td>
+ <td>${sel(p+".dir",["antegrade","retrograde","bi-directional","absent"],d.dir)}</td><td>${sel(p+".phas",["multiphasic","monophasic"],d.phas)}</td>
+ <td>${sel(p+".res",["high","intermediate","low"],d.res)}</td><td>${sel(p+".up",["rapid","prolonged"],d.up)}</td><td>${chips(p+".mods",MODS,d.mods,1)}</td>
+ <td>${id==="CFA"?inp(p+".at",d.at):""}</td><td>${sel(p+".plaque",["none","present","calcified","non-calcified","mixed"],d.plaque)}</td>
+ <td>${chk(p+".occ",d.occ)}</td><td>${d.occ||d.dir==="absent"?sel(p+".recon",segOpts(ART_SEG),d.recon):""}</td><td>${sel(p+".stent",["none","stent","bypass graft"],d.stent)}</td></tr>`;}
+function artInputs(){
+ const th=`<th>Segment</th><th>Status</th><th>PSV cm/s${ev("psv")}</th><th>Direction${ev("dir")}</th><th>Phasicity${ev("phas")}</th><th>Resistance${ev("res")}</th><th>Upstroke${ev("up")}</th><th>Modifiers${ev("mod")}</th><th>AT ms${ev("up")}</th><th>Plaque${ev("plaque")}</th><th>Occl.${ev("occ")}</th><th>Reconst.</th><th>Stent/graft</th>`;
+ const sides=sidesOf("art");
+ const les=S.lesions.map((l,i)=>{const p=`lesions.${i}`;const pl=num(l.psvL),pr=num(l.psvR);const vr=pl!==null&&pr?Math.round(pl/pr*10)/10:null;const g=l.grade&&l.grade!=="auto"?l.grade:vr!==null?grade(vr):"";
+  return `<tr><td>${sel(p+".side",["Rt","Lt"],l.side)}</td><td>${sel(p+".seg",segOpts(ART_SEG),l.seg)}</td><td>${inp(p+".psvL",l.psvL)}</td><td>${inp(p+".psvR",l.psvR)}</td>
+  <td><b>${vr??"-"}</b></td><td>${g?`<span class="badge ${g==="<50%"?"b-mid":"b-bad"}">${esc(g)}</span>`:""}</td><td>${sel(p+".grade",["auto","<50%","50-74%",">=75%"],l.grade||"auto")}</td><td>${inp(p+".len",l.len)}</td><td><button class="btn2 gray" data-del="lesions.${i}">✕</button></td></tr>`;}).join("");
+ const a=S.abi,ar=calcABI("Rt"),al=calcABI("Lt");
+ const abiBadge=v=>{if(v===null)return"-";const c=abiClass(v);return `<span class="badge ${c[0]==="normal"?"b-ok":c[0]==="severe"?"b-bad":"b-mid"}">${v.toFixed(2)} ${c[0]}</span>`;};
+ return headerCard("art")+`<div class="card"><h2>Arterial segments ${ev("artDesc")}<span class="act muted">Defaults = normal; change only abnormal fields</span></h2>
+ ${["Rt","Lt"].map(sd=>`<div class="side${sides.includes(sd)?" show":""}">${sideBlock("art",sd,artRow,th)}</div>`).join("")}</div>
+ <div class="card"><h2>Focal stenosis (velocity ratio) ${ev("vr")}<span class="act"><button class="btn2" data-add="lesions">+ Add lesion</button></span></h2>
+ <table class="seg"><thead><tr><th>Side</th><th>Segment</th><th>PSV at stenosis</th><th>PSV proximal ref.</th><th>VR</th><th>Grade</th><th>Override</th><th>Length cm</th><th></th></tr></thead><tbody>${les||`<tr><td colspan="9" class="muted">No focal stenosis entered.</td></tr>`}</tbody></table>
+ <div class="muted">VR &lt;${CFG.vr50} → &lt;50% · ${CFG.vr50}–&lt;${CFG.vr75} → 50-74% · ≥${CFG.vr75} → ≥75% (S2 Table 7). Occlusion: tick "Occl." in the segment table.</div></div>
+ ${CFG.abi.on?`<div class="card"><h2>ABI ${ev("abi")}</h2><div class="grid">
+ <label class="f">Brachial Rt mmHg${inp("abi.brR",a.brR)}</label><label class="f">Brachial Lt mmHg${inp("abi.brL",a.brL)}</label>
+ <label class="f">Rt DP mmHg${inp("abi.dpR",a.dpR)}</label><label class="f">Rt PT mmHg${inp("abi.ptR",a.ptR)}</label>
+ <label class="f">Lt DP mmHg${inp("abi.dpL",a.dpL)}</label><label class="f">Lt PT mmHg${inp("abi.ptL",a.ptL)}</label>
+ <label class="f">ABI Rt (direct entry)${inp("abi.abiR",a.abiR,"number","auto")}</label><label class="f">ABI Lt (direct entry)${inp("abi.abiL",a.abiL,"number","auto")}</label></div>
+ <div style="margin-top:4px" id="abiBadges">Rt ${abiBadge(ar.v)} &nbsp; Lt ${abiBadge(al.v)} <span class="muted">· ABI = higher ankle (DP/PT) ÷ higher brachial · normal ${CFG.abi.normalLow}–${CFG.abi.high}</span></div></div>`:""}`;
+}
+function venRow(side,s){const id=s[0],d=S.seg.ven[side][id],p=`seg.ven.${side}.${id}`,deep=s[3]!=="superficial";const r=venReflux(id,d);
+ return `<tr class="${d.st!=="ex"?"ne":""}${r||d.pat==="noncompressible"?" abn":""}" data-row="${side}.${id}"><td class="nm" title="${s[2]}">${s[1]}</td><td>${sel(p+".st",STAT,d.st)}</td>
+ <td>${sel(p+".pat",[["compressible","compressible"],["noncompressible","non-compressible"],["ablated","occluded post-ablation"]],d.pat)}</td><td>${chk(p+".treated",d.treated)}</td>
+ <td>${!deep?inp(p+".diam",d.diam):""}</td><td>${inp(p+".rt",d.rt)}</td><td class="muted">&gt;${CFG.reflux[s[3]]}</td><td class="auto">${r?'<span class="badge b-bad">reflux</span>':num(d.rt)!==null&&d.st==="ex"?'<span class="badge b-ok">no</span>':""}</td>
+ <td>${deep?sel(p+".spont",["spontaneous","non-spontaneous"],d.spont):""}</td><td>${deep?sel(p+".pattern",["respirophasic","decreased","continuous","pulsatile","regurgitant"],d.pattern):""}</td><td>${deep?sel(p+".aug",["normal","reduced","absent"],d.aug):""}</td></tr>`;}
+function venInputs(){
+ const th=`<th>Segment</th><th>Status</th><th>Patency</th><th>Treated</th><th>Diam mm${ev("diam")}</th><th>Reflux s${ev("reflux")}</th><th>Cutoff</th><th>Auto</th><th>Spontaneity${ev("spont")}</th><th>Pattern${ev("pattern")}</th><th>Augment.${ev("aug")}</th>`;
+ const sides=sidesOf("ven"),contra=contraOf("ven"),x=S.venx;
+ const perf=S.perfs.map((q,i)=>{const p=`perfs.${i}`;const inc=num(q.t)!==null&&num(q.t)>=CFG.reflux.perforator,big=num(q.diam)!==null&&num(q.diam)>=CFG.perfDiam;
+  return `<tr><td>${sel(p+".side",["Rt","Lt"],q.side)}</td><td>${sel(p+".group",PERF_GROUPS,q.group)}</td><td>${inp(p+".dist",q.dist)}</td><td>${sel(p+".ref",["from the heel","from the medial malleolus","above the knee crease","below the knee crease","below the groin"],q.ref)}</td><td>${inp(p+".diam",q.diam)}</td><td>${inp(p+".t",q.t)}</td>
+  <td>${sel(p+".conn",[["","-"],"GSV","GSV tributary","posterior arch vein","SSV","SSV tributary","varicosity"],q.conn)}</td><td>${chk(p+".ulcer",q.ulcer)}</td><td>${inc?`<span class="badge b-bad">${big?"pathologic":"incompetent"}</span>`:num(q.t)!==null?'<span class="badge b-ok">competent</span>':""}</td><td><button class="btn2 gray" data-del="perfs.${i}">✕</button></td></tr>`;}).join("");
+ const vari=S.varis.map((v,i)=>{const p=`varis.${i}`;return `<tr><td>${sel(p+".side",["Rt","Lt"],v.side)}</td><td>${sel(p+".loc",VARI_LOC,v.loc)}</td><td>${inp(p+".diam",v.diam)}</td><td>${sel(p+".src",VARI_SRC,v.src)}</td><td><button class="btn2 gray" data-del="varis.${i}">✕</button></td></tr>`;}).join("");
+ const CC=[["C0","C0 none"],["C1","C1 tel/retic"],["C2","C2 varicose"],["C2r","C2r recurrent VV"],["C3","C3 edema"],["C4a","C4a pigment/eczema"],["C4b","C4b LDS/atrophie blanche"],["C4c","C4c corona phlebectatica"],["C5","C5 healed ulcer"],["C6","C6 active ulcer"],["C6r","C6r recurrent ulcer"]],E=[["Ep","Ep primary"],["Es","Es secondary"],["Esi","Esi secondary-intravenous"],["Ese","Ese secondary-extravenous"],["Ec","Ec congenital"],["En","En no cause"]];
+ return headerCard("ven")+`<div class="card"><h2>Venous segments ${ev("venDesc")}<span class="act muted">Enter reflux time (s); blank = no reflux</span></h2>
+ ${["Rt","Lt"].map(sd=>`<div class="side${sides.includes(sd)?" show":""}">${sideBlock("ven",sd,venRow,th)}</div>`).join("")}
+ ${contra?`<div class="side show">${sideBlock("ven",contra,venRow,th,["CFV"])} <span class="muted">${ev("contra")} required for a unilateral study</span></div>`:""}</div>
+ <div class="card"><h2>Junction anatomy ${ev("spj")}</h2><div class="grid">
+ <label class="f">GSV pattern${sel("venx.gsvPat",[["","-"],"type i","type h","type s"],x.gsvPat)}</label>
+ <label class="f">SPJ pattern${sel("venx.spjPat",[["","-"],"A1","A2","B","C","SSV absent"],x.spjPat)}</label>
+ <label class="f">SPJ height above crease cm${inp("venx.spjH",x.spjH)}</label>
+ <label class="f">${chk("venx.tribR",x.tribR,"Rt SFJ tributary reflux")} ${ev("sfj")}</label><label class="f">${chk("venx.tribL",x.tribL,"Lt SFJ tributary reflux")}</label></div></div>
+ <div class="card"><h2>Perforators ${ev("perf")}<span class="act"><button class="btn2" data-add="perfs">+ Add perforator</button></span></h2>
+ <table class="seg"><thead><tr><th>Side</th><th>Group</th><th>Dist cm</th><th>Reference</th><th>Diam mm</th><th>Outflow s</th><th>Connects</th><th>Ulcer bed</th><th>Auto</th><th></th></tr></thead><tbody>${perf||`<tr><td colspan="10" class="muted">None entered.</td></tr>`}</tbody></table>
+ <div class="muted">Pathologic: ≥${CFG.perfDiam} mm and outward flow ≥${CFG.reflux.perforator} s (outside source)</div></div>
+ <div class="card"><h2>Varicosities &amp; source ${ev("vari")}<span class="act"><button class="btn2" data-add="varis">+ Add</button></span></h2>
+ <table class="seg"><thead><tr><th>Side</th><th>Location</th><th>Max diam mm</th><th>Source/feeder</th><th></th></tr></thead><tbody>${vari||`<tr><td colspan="5" class="muted">None entered.</td></tr>`}</tbody></table></div>
+ ${CFG.ceap?`<div class="card"><h2>CEAP 2020 ${ev("ceap")}<span class="act muted">C: check every class present (basic = highest, advanced = all)</span></h2>
+ ${sides.map(sd=>{const k=sd[0],pv=ceapPreview(sd);return `<div class="ceaprow" data-ceap="${sd}"><b>${SIDE[sd]}</b>
+  <div style="margin:4px 0"><span class="muted">C</span> ${chips("venx.ceapC"+k,CC,x["ceapC"+k])}
+  <span class="muted" style="margin-left:8px">Symptoms</span> ${sel("venx.ceapS"+k,[["","-"],["s","s (symptomatic)"],["a","a (asymptomatic)"]],x["ceapS"+k])}
+  <span class="muted" style="margin-left:8px">E</span> ${sel("venx.ceapE"+k,E,x["ceapE"+k])}</div>
+  <div class="grid"><label class="f">A override (auto: ${esc(pv.A)})${inp("venx.ceapA"+k,x["ceapA"+k],"text",pv.A)}</label>
+  <label class="f">P override (auto: ${esc(pv.P)})${inp("venx.ceapP"+k,x["ceapP"+k],"text",pv.P)}</label>
+  <label class="f">Advanced P segments (auto: ${esc(pv.Ps||"-")})${inp("venx.ceapPs"+k,x["ceapPs"+k],"text",pv.Ps||"e.g. Pr GSVa, GSVb, CPV")}</label></div></div>`;}).join("")}
+ <div class="muted">A and P are auto-derived from the findings above; type in an override field to replace the auto value (blank = auto).</div></div>`:""}`;
+}
+function dvtRow(side,s){const id=s[0],d=S.seg.dvt[side][id],p=`seg.dvt.${side}.${id}`;const hasT=dvtHasT(d);
+ const flow=["EIV","CFV","POPV"].includes(id),aug=["CFV","POPV"].includes(id);
+ return `<tr class="${d.st!=="ex"?"ne":""}${hasT?" abn":""}" data-row="${side}.${id}"><td class="nm" title="${s[2]}">${s[1]}</td><td>${sel(p+".st",STAT,d.st)}</td>
+ <td>${sel(p+".comp",[["full","full"],["partial","partial"],["none","none"],["na","not assessed"]],d.comp)}</td><td>${sel(p+".thr",["none","non-occlusive","occlusive"],d.thr)}</td>
+ <td>${hasT?sel(p+".echo",[["","-"],"hypoechoic","mixed","hyperechoic"],d.echo):""}</td><td>${hasT?sel(p+".size",[["","-"],"distended","normal","contracted"],d.size):""}</td>
+ <td>${hasT?chips(p+".feat",DFEAT,d.feat,1):""}</td><td>${sel(p+".color",[["complete","complete"],["partial","partial/defect"],["absent","absent"]],d.color)}</td>
+ <td>${flow?sel(p+".spont",["spontaneous","non-spontaneous"],d.spont):""}</td><td>${flow?sel(p+".pattern",["respirophasic","decreased","continuous","pulsatile","regurgitant"],d.pattern):""}</td><td>${aug?sel(p+".aug",["normal","reduced","absent"],d.aug):""}</td>
+ <td>${["SFJ","GSV","SSV"].includes(id)&&hasT?inp(p+".apex",d.apex):""}</td></tr>`;}
+function dvtInputs(){
+ const th=`<th>Segment</th><th>Status</th><th>Compress.${ev("comp")}</th><th>Thrombus${ev("comp")}</th><th>Echo${ev("age")}</th><th>Vein size${ev("age")}</th><th>Features${ev("age")}</th><th>Color${ev("color")}</th><th>Spontaneity${ev("spont")}</th><th>Pattern${ev("pattern")}</th><th>Augment.${ev("aug")}</th><th>Apex→jxn cm${ev("svt")}</th>`;
+ const sides=sidesOf("dvt"),contra=contraOf("dvt"),h=S.hdr.dvt;
+ return headerCard("dvt")+`<div class="card"><h2>Veins (whole leg incl. calf) ${ev("venDesc")}<span class="act muted">Defaults = normal; abnormal compressibility shows thrombus fields</span></h2>
+ ${["Rt","Lt"].map(sd=>`<div class="side${sides.includes(sd)?" show":""}">${sideBlock("dvt",sd,dvtRow,th)}</div>`).join("")}
+ ${contra?`<div class="side show">${sideBlock("dvt",contra,dvtRow,th,["CFV"])} <span class="muted">${ev("contra")} required for a unilateral study</span></div>`:""}</div>
+ <div class="card"><h2>Other findings</h2>${chips("hdr.dvt.other",["Baker's cyst","Hematoma","Lymphadenopathy","Subcutaneous edema","Muscle tear","Joint effusion"],h.other)} ${inp("hdr.dvt.otherFree",h.otherFree,"text","other","220px")}</div>`;
+}
+const CRIT={
+ art:[["Waveform: direction / phasicity / resistance / upstroke + modifiers","S2 Tables 1-3"],["Velocity ratio <2 → <50%; 2–<4 → 50-74%; ≥4 → ≥75%","S2 Table 7 p.32"],["No flow = occlusion","S1 p.13; S2 Table 2"],["CFA AT >140 ms / prolonged upstroke → proximal inflow disease","S2 Table 3; S1 p.13"],["Distal dampened monophasic → proximal flow-limiting disease","S2 Table 7, p.9"],["Intermediate resistive → vasodilation or distal obstruction","S2 Table 2"],["ABI normal 0.9–1.4; <0.9 PAD; <0.5 severe; >1.4 non-compressible","S1 p.12, p.15"],["Plaque characterization terms; higher-ankle ABI convention","OUT"]],
+ ven:[["Descriptors: direction / pattern / spontaneity / augmentation / reflux","S2 Tables 4-5"],["Reflux: superficial & perforator >0.5 s; CFV/FV/POPV >1.0 s; other deep >0.5 s","OUT (user decision); S3 p.12 for 0.5 s"],["Pathologic perforator ≥3.5 mm & ≥0.5 s","OUT"],["Segmental reflux; find the source; SFJ tributaries","S3 pp.5, 12-13; S4 p.183"],["Continuous CFV → central obstruction; pulsatile → ↑CVP","S2 Table 9"],["Contralateral CFV for unilateral study; position stated; GSV/SSV diameters","S4 pp.182-183"],["CEAP 2020: basic = highest C, advanced = all C + segments; s/a; Ep/Es/Esi/Ese/Ec/En; As/Ad/Ap/An; Pr/Po/Pr,o/Pn","OUT (Lurie 2020, JVS-VL 8:342)"]],
+ dvt:[["Non-/partial compressibility = thrombus","OUT (SRU 2018, user-adopted)"],["Acute vs chronic features","OUT (SRU 2018)"],["Proximal vs distal (calf) DVT","OUT"],["Continuous/non-spontaneous CFV → central obstruction","S2 Table 9, p.11"],["Augmentation normal/reduced/absent","S2 Table 5"],["Pulsatile LE venous flow → ↑CVP","S2 Table 9"],["Document compressible/thrombus per vessel; contralateral CFV","S4 p.183"],["SVT: distance of apex to SFJ/SPJ recorded only; DVT-equivalence = clinical judgment","OUT (user decision)"]]};
+let manual=false;
+function render(){
+ document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===S.tab));
+ const sc=window.scrollY,ae=document.activeElement,fp=ae&&ae.dataset?ae.dataset.p:null;let ss=null;try{ss=ae.selectionStart;}catch(_){}
+ $("#inputs").innerHTML=S.tab==="art"?artInputs():S.tab==="ven"?venInputs():dvtInputs();
+ if(fp){const ne=document.querySelector(`[data-p="${fp}"]`);if(ne){ne.focus({preventScroll:true});try{if(ss!==null)ne.setSelectionRange(ss,ss);}catch(_){}}}
+ $("#criteria").innerHTML=CRIT[S.tab].map(([t,s])=>`<li>${esc(t)} — <span class="${/OUT/.test(s)?"o":""}">${esc(s)}</span></li>`).join("");
+ refresh();window.scrollTo(0,sc);
+}
+function refresh(){const r=genReport(S.tab);$("#warnings").innerHTML=r.warnings.map(esc).join("<br>");if(!manual)$("#report").value=r.text;return r;}
+document.addEventListener("change",e=>{const el=e.target;if(!el.dataset.p)return;set(el.dataset.p,el.type==="checkbox"?el.checked:el.value);
+ const m=el.dataset.p.match(/^seg\.dvt\.(Rt|Lt)\.(\w+)\.(thr|comp)$/);
+ if(m){const d=S.seg.dvt[m[1]][m[2]];if(m[3]==="thr"){if(d.thr==="occlusive"&&d.color==="complete")d.color="absent";if(d.thr==="non-occlusive"&&d.color==="complete")d.color="partial";if(d.thr!=="none"&&d.comp==="full")d.comp=d.thr==="occlusive"?"none":"partial";}
+  if(m[3]==="comp"&&d.comp==="full"&&d.thr==="none")d.color="complete";}
+ if(el.tagName==="INPUT"&&el.type!=="checkbox")setTimeout(render,0);else render();});
+document.addEventListener("input",e=>{const el=e.target;if(!el.dataset.p||el.tagName==="SELECT"||el.type==="checkbox")return;set(el.dataset.p,el.value);refresh();});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-chip],[data-tab],[data-allnormal],[data-add],[data-del]");if(!t)return;
+ if(t.dataset.chip){const a=get(t.dataset.chip),v=t.dataset.v,i=a.indexOf(v);i>=0?a.splice(i,1):a.push(v);render();return;}
+ if(t.dataset.tab){S.tab=t.dataset.tab;manual=false;$("#manualNote").classList.add("hide");render();return;}
+ if(t.dataset.allnormal){const [tab,side]=t.dataset.allnormal.split(".");for(const s of SEGDEF[tab]){const keep=S.seg[tab][side][s[0]].st;S.seg[tab][side][s[0]]=segDefault(tab,s);S.seg[tab][side][s[0]].st=keep==="nv"?"ex":keep;}
+  if(tab==="art")S.lesions=S.lesions.filter(l=>l.side!==side);if(tab==="ven"){S.perfs=S.perfs.filter(p=>p.side!==side);S.varis=S.varis.filter(v=>v.side!==side);S.venx["trib"+side[0]]=false;}render();return;}
+ if(t.dataset.add){const side=sidesOf(S.tab)[0];
+  if(t.dataset.add==="lesions")S.lesions.push({side,seg:"",psvL:"",psvR:"",grade:"auto",len:""});
+  if(t.dataset.add==="perfs")S.perfs.push({side,group:"calf medial posterior tibial",dist:"",ref:"from the heel",diam:"",t:"",conn:"",ulcer:false});
+  if(t.dataset.add==="varis")S.varis.push({side,loc:"medial calf",diam:"",src:"GSV"});render();return;}
+ if(t.dataset.del){const [k,i]=t.dataset.del.split(".");S[k].splice(+i,1);render();return;}
+});
+$("#report").addEventListener("input",()=>{manual=true;$("#manualNote").classList.remove("hide");});
+$("#btnResume").addEventListener("click",()=>{manual=false;$("#manualNote").classList.add("hide");refresh();});
+$("#btnCopy").addEventListener("click",async()=>{const ta=$("#report");let ok=false;
+ try{if(!navigator.clipboard)throw 0;await Promise.race([navigator.clipboard.writeText(ta.value),new Promise((_,rej)=>setTimeout(()=>rej("timeout"),1500))]);ok=true;}
+ catch(_){ta.focus();ta.select();try{ok=document.execCommand("copy");}catch(__){}}
+ toast(ok?"Report copied to clipboard":"Copy failed - select the text and press Ctrl+C");});
+$("#btnReset").addEventListener("click",()=>{if(!confirm("Clear all inputs for a new patient?"))return;const tab=S.tab;S=defaultState();S.tab=tab;manual=false;$("#manualNote").classList.add("hide");render();});
+function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(toast._t);toast._t=setTimeout(()=>t.style.display="none",1800);}
+/* automation/test hook */
+window.DL={get state(){return S},set state(v){S=v},defaultState,genReport,render,refresh,CFG};
+render();
+</script>
+</body>
+</html>
