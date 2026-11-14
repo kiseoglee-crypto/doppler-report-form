@@ -1,0 +1,168 @@
+=== ARTERIAL: normal bilateral ===
+EXAM: Lower extremity arterial duplex ultrasound, bilateral.
+DATE OF EXAM: 2026-11-14
+INDICATION: Claudication.
+TECHNIQUE: B-mode, color and spectral Doppler evaluation of the bilateral lower extremity arteries in the supine position. Waveforms described per SVM/SVU consensus nomenclature; stenosis graded by peak systolic velocity ratio. Equipment: TestSys, L12-3 transducer.
+COMPARISON: None.
+
+FINDINGS:
+Right common femoral artery, profunda femoris artery, proximal superficial femoral artery, mid superficial femoral artery, distal superficial femoral artery, popliteal artery, anterior tibial artery, posterior tibial artery, and peroneal artery: antegrade, multiphasic, high resistive waveforms with rapid upstroke; no plaque, stenosis, or occlusion identified.
+Left common femoral artery, profunda femoris artery, proximal superficial femoral artery, mid superficial femoral artery, distal superficial femoral artery, popliteal artery, anterior tibial artery, posterior tibial artery, and peroneal artery: antegrade, multiphasic, high resistive waveforms with rapid upstroke; no plaque, stenosis, or occlusion identified.
+
+IMPRESSION:
+1. Right lower extremity: no hemodynamically significant (50% or greater) arterial stenosis or occlusion.
+2. Left lower extremity: no hemodynamically significant (50% or greater) arterial stenosis or occlusion.
+
+Sonographer: [ ]   Interpreting physician: Dr. X   Date of interpretation: 2026-11-14
+
+=== ARTERIAL: Rt SFA stenosis + ABI ===
+EXAM: Lower extremity arterial duplex ultrasound, bilateral.
+DATE OF EXAM: 2026-11-14
+INDICATION: Claudication.
+TECHNIQUE: B-mode, color and spectral Doppler evaluation of the bilateral lower extremity arteries in the supine position. Waveforms described per SVM/SVU consensus nomenclature; stenosis graded by peak systolic velocity ratio. Equipment: TestSys, L12-3 transducer.
+COMPARISON: None.
+
+FINDINGS:
+Right mid superficial femoral artery: antegrade, multiphasic, high resistive waveform with rapid upstroke; calcified plaque.
+Right popliteal artery: antegrade, monophasic, low resistive waveform with prolonged upstroke, with dampened morphology; PSV 40 cm/s.
+Right anterior tibial artery: antegrade, monophasic, low resistive waveform with prolonged upstroke, with dampened morphology.
+Right common femoral artery, profunda femoris artery, proximal superficial femoral artery, posterior tibial artery, and peroneal artery: antegrade, multiphasic, high resistive waveforms with rapid upstroke; no plaque, stenosis, or occlusion identified.
+Right PSV (cm/s): CFA 110.
+Right distal superficial femoral artery: focal stenosis with PSV 380 cm/s (proximal reference 90 cm/s, velocity ratio 4.2), length 3 cm, consistent with 75% or greater diameter stenosis.
+Right ABI: 0.62 (ankle 80 mmHg [DP 80, PT 75] / brachial 130 mmHg).
+Left common femoral artery, profunda femoris artery, proximal superficial femoral artery, mid superficial femoral artery, distal superficial femoral artery, popliteal artery, anterior tibial artery, posterior tibial artery, and peroneal artery: antegrade, multiphasic, high resistive waveforms with rapid upstroke; no plaque, stenosis, or occlusion identified.
+Left ABI: 1.08 (ankle 140 mmHg [DP 135, PT 140] / brachial 130 mmHg).
+
+IMPRESSION:
+1. Right distal superficial femoral artery: 75% or greater diameter stenosis (velocity ratio 4.2).
+2. Right dampened monophasic waveforms in the popliteal artery and anterior tibial artery are consistent with the more proximal flow-limiting disease.
+3. Right ABI 0.62, consistent with peripheral arterial disease.
+4. Left lower extremity: no hemodynamically significant (50% or greater) arterial stenosis or occlusion.
+5. Left ABI 1.08, within normal range.
+
+Sonographer: [ ]   Interpreting physician: Dr. X   Date of interpretation: 2026-11-14
+
+=== ARTERIAL: Lt SFA occlusion ===
+EXAM: Lower extremity arterial duplex ultrasound, left.
+DATE OF EXAM: 2026-11-14
+INDICATION: [indication].
+TECHNIQUE: B-mode, color and spectral Doppler evaluation of the left lower extremity arteries in the supine position. Waveforms described per SVM/SVU consensus nomenclature; stenosis graded by peak systolic velocity ratio. Equipment: TestSys, L12-3 transducer.
+COMPARISON: None.
+
+FINDINGS:
+Left mid superficial femoral artery: no flow detected, consistent with occlusion, with reconstitution at the popliteal artery.
+Left popliteal artery: antegrade, monophasic, low resistive waveform with prolonged upstroke, with dampened morphology.
+Left common femoral artery, profunda femoris artery, proximal superficial femoral artery, distal superficial femoral artery, anterior tibial artery, posterior tibial artery, and peroneal artery: antegrade, multiphasic, high resistive waveforms with rapid upstroke; no plaque, stenosis, or occlusion identified.
+
+IMPRESSION:
+1. Left mid superficial femoral artery occlusion, with reconstitution at the popliteal artery.
+2. Left dampened monophasic waveforms in the popliteal artery are consistent with the more proximal flow-limiting disease.
+
+Sonographer: [ ]   Interpreting physician: Dr. X   Date of interpretation: 2026-11-14
+
+=== VENOUS: Rt SFJ/GSV reflux ===
+EXAM: Lower extremity venous insufficiency (reflux) duplex ultrasound, left.
+DATE OF EXAM: 2026-11-14
+INDICATION: [indication].
+TECHNIQUE: Duplex ultrasound of the left lower extremity deep and superficial veins in the standing position. Reflux provoked with manual distal compression-release and Valsalva. Reflux criteria: superficial and perforator veins >0.5 s; common femoral, femoral and popliteal veins >1 s. Equipment: TestSys, L12-3 transducer.
+COMPARISON: None.
+
+FINDINGS:
+Left common femoral vein, proximal femoral vein, and popliteal vein: compressible with spontaneous, respirophasic flow and normal augmentation; no reflux.
+Left saphenofemoral junction, GSV, proximal thigh, GSV, mid thigh, GSV, distal thigh, GSV, knee, GSV, proximal calf, saphenopopliteal junction, SSV, proximal, and SSV, mid calf: compressible; no reflux.
+Contralateral right common femoral vein: compressible; spontaneous, respirophasic flow.
+
+IMPRESSION:
+1. Left no significant superficial, perforator, or deep venous reflux; deep veins compressible.
+
+Sonographer: [ ]   Interpreting physician: Dr. X   Date of interpretation: 2026-11-14
+
+=== DVT: Lt acute proximal DVT ===
+EXAM: Lower extremity venous duplex ultrasound for deep vein thrombosis, left.
+DATE OF EXAM: 2026-11-14
+INDICATION: Leg swelling, Elevated D-dimer.
+TECHNIQUE: Compression B-mode, color and spectral Doppler evaluation of the left lower extremity deep veins from the common femoral vein through the calf veins, in the supine position. Equipment: TestSys, L12-3 transducer.
+COMPARISON: None.
+
+FINDINGS:
+Left common femoral vein: spontaneous, respirophasic flow with reduced augmentation.
+Left distal femoral vein: non-compressible, with occlusive intraluminal thrombus (hypoechoic, vein distended, smooth margins); no color flow.
+Left popliteal vein: non-compressible, with occlusive intraluminal thrombus (hypoechoic, vein distended); no color flow.
+Left common femoral vein, saphenofemoral junction/proximal great saphenous vein, deep femoral vein, proximal femoral vein, mid femoral vein, posterior tibial veins, peroneal veins, gastrocnemius veins, and soleal veins: fully compressible with normal color filling; no intraluminal thrombus.
+Contralateral right common femoral vein: fully compressible; spontaneous, respirophasic flow with normal augmentation.
+
+IMPRESSION:
+1. Left acute occlusive deep vein thrombosis involving the distal femoral vein and popliteal vein (proximal DVT).
+2. Contralateral right common femoral vein compressible with respirophasic flow.
+
+Sonographer: [ ]   Interpreting physician: Dr. X   Date of interpretation: 2026-11-14
+
+=== DVT: normal bilateral ===
+EXAM: Lower extremity venous duplex ultrasound for deep vein thrombosis, bilateral.
+DATE OF EXAM: 2026-11-14
+INDICATION: Suspected DVT.
+TECHNIQUE: Compression B-mode, color and spectral Doppler evaluation of the bilateral lower extremity deep veins from the common femoral vein through the calf veins, in the supine position. Equipment: TestSys, L12-3 transducer.
+COMPARISON: None.
+
+FINDINGS:
+Right common femoral vein: spontaneous, respirophasic flow with normal augmentation.
+Right common femoral vein, saphenofemoral junction/proximal great saphenous vein, deep femoral vein, proximal femoral vein, mid femoral vein, distal femoral vein, popliteal vein, posterior tibial veins, peroneal veins, gastrocnemius veins, and soleal veins: fully compressible with normal color filling; no intraluminal thrombus.
+Left common femoral vein: spontaneous, respirophasic flow with normal augmentation.
+Left common femoral vein, saphenofemoral junction/proximal great saphenous vein, deep femoral vein, proximal femoral vein, mid femoral vein, distal femoral vein, popliteal vein, posterior tibial veins, peroneal veins, gastrocnemius veins, and soleal veins: fully compressible with normal color filling; no intraluminal thrombus.
+
+IMPRESSION:
+1. Right no evidence of deep vein thrombosis from the common femoral vein through the calf veins.
+2. Left no evidence of deep vein thrombosis from the common femoral vein through the calf veins.
+
+Sonographer: [ ]   Interpreting physician: Dr. X   Date of interpretation: 2026-11-14
+
+=== DVT: Rt GSV SVT ===
+EXAM: Lower extremity venous duplex ultrasound for deep vein thrombosis, bilateral.
+DATE OF EXAM: 2026-11-14
+INDICATION: [indication].
+TECHNIQUE: Compression B-mode, color and spectral Doppler evaluation of the bilateral lower extremity deep veins from the common femoral vein through the calf veins, in the supine position. Equipment: TestSys, L12-3 transducer.
+COMPARISON: None.
+
+FINDINGS:
+Right common femoral vein: spontaneous, respirophasic flow with normal augmentation.
+Right great saphenous vein: non-compressible, with occlusive intraluminal thrombus; color filling preserved; thrombus apex 4 cm from the saphenofemoral junction.
+Right common femoral vein, saphenofemoral junction/proximal great saphenous vein, deep femoral vein, proximal femoral vein, mid femoral vein, distal femoral vein, popliteal vein, posterior tibial veins, peroneal veins, gastrocnemius veins, and soleal veins: fully compressible with normal color filling; no intraluminal thrombus.
+Left common femoral vein: spontaneous, respirophasic flow with normal augmentation.
+Left common femoral vein, saphenofemoral junction/proximal great saphenous vein, deep femoral vein, proximal femoral vein, mid femoral vein, distal femoral vein, popliteal vein, posterior tibial veins, peroneal veins, gastrocnemius veins, and soleal veins: fully compressible with normal color filling; no intraluminal thrombus.
+
+IMPRESSION:
+1. Right superficial vein thrombosis of the great saphenous vein, thrombus apex 4 cm from the saphenofemoral junction.
+2. Right no evidence of deep vein thrombosis from the common femoral vein through the calf veins.
+3. Left no evidence of deep vein thrombosis from the common femoral vein through the calf veins.
+
+Sonographer: [ ]   Interpreting physician: Dr. X   Date of interpretation: 2026-11-14
+
+=== VENOUS: CEAP full ===
+EXAM: Lower extremity venous insufficiency (reflux) duplex ultrasound, right.
+DATE OF EXAM: 2026-11-14
+INDICATION: [indication].
+TECHNIQUE: Duplex ultrasound of the right lower extremity deep and superficial veins in the standing position. Reflux provoked with manual distal compression-release and Valsalva. Reflux criteria: superficial and perforator veins >0.5 s; common femoral, femoral and popliteal veins >1 s. Equipment: TestSys, L12-3 transducer.
+COMPARISON: None.
+
+FINDINGS:
+Right saphenofemoral junction: reflux present (2 s).
+Right GSV, proximal thigh: diameter 6 mm; reflux present (2 s).
+Right GSV, mid thigh: diameter 6 mm; reflux present (2 s).
+Right GSV, distal thigh: diameter 6 mm; reflux present (2 s).
+Right GSV, knee: diameter 6 mm; reflux present (2 s).
+Right GSV, proximal calf: diameter 6 mm; reflux present (2 s).
+Right saphenopopliteal junction: reflux present (1 s).
+Right SSV, proximal: diameter 4 mm; reflux present (1.5 s).
+Right common femoral vein, proximal femoral vein, and popliteal vein: compressible with spontaneous, respirophasic flow and normal augmentation; no reflux.
+Right SSV, mid calf: compressible; no reflux.
+Right calf medial posterior tibial perforator at 10 cm from the heel: diameter 4 mm, outward flow 1 s; incompetent (pathologic).
+Contralateral left common femoral vein: compressible; spontaneous, respirophasic flow.
+
+IMPRESSION:
+1. Right saphenofemoral junction incompetence with great saphenous vein reflux from the SFJ to the proximal calf (GSV diameter 6-6 mm).
+2. Right saphenopopliteal junction incompetence with small saphenous vein reflux to the proximal calf (SSV diameter up to 4 mm).
+3. Right incompetent (pathologic) calf medial posterior tibial perforator (4 mm, 1 s).
+4. Right no deep venous reflux; deep veins compressible.
+5. Right CEAP 2020: C4a,s Ep As,p Pr (advanced: C2,3,4a,s Ep As,p Pr GSVa, GSVb, SSV, CPV).
+
+Sonographer: [ ]   Interpreting physician: Dr. X   Date of interpretation: 2026-11-14
